@@ -1,0 +1,10 @@
+// Load a simple token processing pipeline from another pipeline file
+// ask Jiarui for piper file she's using
+load DefaultTokenizerPipeline
+
+// Add non-core annotators
+add ContextDependentTokenizerAnnotator
+addDescription POSTagger
+// Default fast dictionary lookup
+load DictionarySubPipe
+add EventTimeAnaforaWriter
