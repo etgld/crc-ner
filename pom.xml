@@ -27,12 +27,12 @@
         <dependency>
             <groupId>org.apache.ctakes</groupId>
             <artifactId>ctakes-user-resources</artifactId>
-            <exclusions>
+            <!-- <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
-            </exclusions>
+            </exclusions> -->
         </dependency>
     </dependencies>
 
