@@ -16,9 +16,23 @@
             <groupId>org.apache.ctakes</groupId>
             <artifactId>ctakes-dictionary-lookup-fast</artifactId>
         </dependency>
+        <!-- <dependency>
+            <groupId>org.apache.ctakes</groupId>
+            <artifactId>ctakes-dictionary-lookup</artifactId>
+        </dependency> -->
         <dependency>
             <groupId>org.apache.ctakes</groupId>
             <artifactId>ctakes-temporal</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.ctakes</groupId>
+            <artifactId>ctakes-user-resources</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
