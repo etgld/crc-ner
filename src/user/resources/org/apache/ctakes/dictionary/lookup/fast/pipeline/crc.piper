@@ -1,10 +1,17 @@
-// Load a simple token processing pipeline from another pipeline file
-// ask Jiarui for piper file she's using
-load DefaultTokenizerPipeline
+// One giant section
+add SimpleSegmentAnnotator
 
-// Add non-core annotators
-add ContextDependentTokenizerAnnotator
-addDescription POSTagger
-// Default fast dictionary lookup
+//  Detect sentences using a machine learning model.
+addLogged SentenceDetectorAnnotatorBIO classifierJarPath=/org/apache/ctakes/core/models/sentdetect/model.jar
+
+// Joins sentences improperly split at person titles.
+add MrsDrSentenceJoiner
+
+//  Tokenize by penn treebank rules.
+add TokenizerAnnotatorPTB
+
 load DictionarySubPipe
-add EventTimeAnaforaWriter
+
+// to anafora format
+add EventTimeAnaforaWriter SubDirectory=anafora OnlyTemporalEvents=no
+add EventTextWriter SubDirectory=txt
