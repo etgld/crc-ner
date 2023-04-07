@@ -18,16 +18,16 @@ import java.util.stream.Collectors;
 
 
 /**
- * Note level RT annotations output for the RT Docker
+ * Note level event annotations for debugging chemo dictionary lookup
  *
  * @author Eli , chip-nlp
  * @version %I%
- * @since 3/13/2023
+ * @since 4/6/2023
  */
 final public class EventTextWriter extends AbstractJCasFileWriter {
 
 
-    static private final Logger LOGGER = Logger.getLogger( "RTProcedureTextWriter" );
+    static private final Logger LOGGER = Logger.getLogger( "EventTextWriter" );
     static private final String FILE_EXTENSION = ".txt";
 
 
@@ -36,25 +36,24 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
                            final String outputDir,
                            final String documentId,
                            final String fileName ) throws IOException {
-        final File outputFilePath = new File( outputDir , fileName + "_procedure_tags" + FILE_EXTENSION );
+        final File outputFilePath = new File( outputDir , fileName + "_chemo_mentions" + FILE_EXTENSION );
         LOGGER.info("Writing " + fileName + FILE_EXTENSION + " to " + outputFilePath.getPath()  +" ...") ;
         try ( Writer writer = new BufferedWriter( new FileWriter( outputFilePath ) ) ) {
-            Map<Sentence, Collection<EventMention>> sent2ColProcs = JCasUtil.indexCovered(
+            Map<Sentence, Collection<EventMention>> sent2ColEvents = JCasUtil.indexCovered(
                     jCas,
                     Sentence.class,
                     EventMention.class
             );
+
             Map<Sentence, List<EventMention>> sent2Events = new HashMap<>();
-            sent2ColProcs
-                    .keySet()
-                    .forEach(
-                    sentence -> sent2Events.put(
+            sent2ColEvents.forEach(
+                    (sentence, events) -> sent2Events.put(
                             sentence,
-                            sent2ColProcs
-                                    .get(sentence)
-                                    .stream()
+                            events.stream()
                                     .sorted(
-                                            Comparator.comparingInt( EventMention::getBegin )
+                                            Comparator.comparingInt(
+                                                    EventMention::getBegin
+                                            )
                                     ).collect(Collectors.toList())
                     )
             );
@@ -111,11 +110,6 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
             final Writer writer
     ) throws IOException {
 
-        // there HAS to be a better way to do this
-        // (would be trivial if cTAKES returned a null instead of throwing a fit)
-        // but for now:
-
-
         writer.write(
                 String.format(
                         "\nSentence: %d\n\n",
@@ -124,10 +118,10 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
         );
 
 
-        Map<Pair<Integer>, String> labelToInds = new HashMap<>();
+        Set<Pair<Integer>> labelToInds = new HashSet<>();
 
         eventMentions.forEach(
-                eventMention -> labelToInds.put(getSpan(eventMention), "crc-synonym")
+                eventMention -> labelToInds.add(getSpan(eventMention))
         );
 
         writer.write(
@@ -139,10 +133,11 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
         writer.write("\n");
     }
 
-    static private String taggedSentence(Sentence sentence, Map<Pair<Integer>, String> labelToInds){
+    static private String taggedSentence(Sentence sentence, Set<Pair<Integer>> labelToInds){
         StringBuilder out = new StringBuilder();
+        String tag = "chemo-mention";
+
         List<Pair<Integer>> orderedInds = labelToInds
-                .keySet()
                 .stream()
                 .sorted(
                         Comparator
@@ -158,7 +153,6 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
         int previous = 0;
 
         for (Pair<Integer> indices : orderedInds){
-            String tag = labelToInds.get(indices);
             int localBegin = indices.getValue1() - sentenceBegin;
             int localEnd = indices.getValue2() - sentenceBegin;
             if (previous < localBegin) {
