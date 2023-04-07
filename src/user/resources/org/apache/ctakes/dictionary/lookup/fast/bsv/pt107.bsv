@@ -1,4 +1,11 @@
-000|T121|5-FU
-000|T121|leucovorin
-000|T121|oxaliplatin
-000|T121|FOLFOX 6
+000|T121|chemotherapy
+000|T121|chemotherapies
+000|T121|gemcitabine
+000|T121|paclitaxel
+000|T121|carboplatin
+000|T121|carboplatinum
+000|T121|doxorubicin
+000|T121|taxol
+000|T121|chemo
+000|T121|gemzar
+000|T121|chemotherapeutic
