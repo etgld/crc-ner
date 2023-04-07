@@ -26,7 +26,7 @@
             <name>CustomCuiRareWord</name>
             <implementationName>org.apache.ctakes.dictionary.lookup2.dictionary.BsvRareWordDictionary</implementationName>
             <properties>
-                <property key="bsvPath" value="org/apache/ctakes/dictionary/lookup/fast/bsv/crc.bsv"/>
+                <property key="bsvPath" value="org/apache/ctakes/dictionary/lookup/fast/bsv/pt107.bsv"/>
             </properties>
         </dictionary>
     </dictionaries>
@@ -36,7 +36,7 @@
             <name>CustomCuiConcept</name>
             <implementationName>org.apache.ctakes.dictionary.lookup2.concept.BsvConceptFactory</implementationName>
             <properties>
-                <property key="bsvPath" value="org/apache/ctakes/dictionary/lookup/fast/bsv/crc.bsv"/>
+                <property key="bsvPath" value="org/apache/ctakes/dictionary/lookup/fast/bsv/pt107.bsv"/>
             </properties>
         </conceptFactory>
     </conceptFactories>
