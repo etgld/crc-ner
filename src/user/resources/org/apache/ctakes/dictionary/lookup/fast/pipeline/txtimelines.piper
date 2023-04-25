@@ -10,6 +10,7 @@ add MrsDrSentenceJoiner
 //  Tokenize by penn treebank rules.
 add TokenizerAnnotatorPTB
 
+set Blacklist=org/apache/ctakes/dictionary/lookup/fast/blacklists/today
 load DictionarySubPipe
 
 // Default Clinical Pipeline
