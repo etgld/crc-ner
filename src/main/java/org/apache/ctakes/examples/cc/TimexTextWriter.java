@@ -132,6 +132,8 @@ final public class TimexTextWriter extends AbstractJCasFileWriter {
         int sentenceBegin = sentence.getBegin();
         int previous = 0;
 
+        List<String> mentionOuts = new ArrayList<>();
+
         for (TimeMention timeMention : timeMentions){
             int localBegin = timeMention.getBegin() - sentenceBegin;
             int localEnd = timeMention.getEnd() - sentenceBegin;
@@ -145,17 +147,32 @@ final public class TimexTextWriter extends AbstractJCasFileWriter {
             try {
                 normalized = normalizer.parse(unnormalized, dummyDCT).get();
             } catch (Exception ignored){}
-
+            out.append(String.format("<%s> ", tag));
+            // out.append(normalized);
+            out.append(sentenceText, localBegin, localEnd);
+            out.append(String.format(" </%s>", tag));
             if (normalized != null) {
-                out.append(String.format("<%s> ", tag));
-                out.append(normalized);
-                out.append(String.format(" </%s>", tag));
+                mentionOuts.add(
+                        String.format(
+                                "__HANDLED__ literal : %s\ttimeML : %s\tfull : %s\n\n",
+                                sentenceText.substring(localBegin, localEnd),
+                                normalized.timeMLValue(),
+                                normalized
+                        )
+                );
+            } else {
+                mentionOuts.add(
+                        String.format(
+                                "__UNHANDLED__ literal : %s\n\n",
+                                sentenceText.substring(localBegin, localEnd)
+                        )
+                );
             }
             previous = localEnd;
         }
 
         out.append(sentenceText, previous, sentenceText.length());
-
+        out.append("\n\n").append(String.join("", mentionOuts)).append("\n\n");
         return out.toString();
     }
 }
