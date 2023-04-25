@@ -2,15 +2,14 @@ package org.apache.ctakes.examples.cc;
 
 import org.apache.ctakes.core.cc.AbstractJCasFileWriter;
 import org.apache.ctakes.core.util.Pair;
-import org.apache.ctakes.temporal.ae.EventAnnotator;
-import org.apache.ctakes.typesystem.type.refsem.Event;
-import org.apache.ctakes.typesystem.type.textsem.EventMention;
-import org.apache.ctakes.typesystem.type.textsem.ProcedureMention;
+import org.apache.ctakes.typesystem.type.textsem.TimeMention;
 import org.apache.ctakes.typesystem.type.textspan.Sentence;
 import org.apache.log4j.Logger;
 import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.jcas.JCas;
 import org.apache.uima.jcas.tcas.Annotation;
+
+import org.clulab.timenorm.scfg.*;
 
 import java.io.*;
 import java.util.*;
@@ -24,35 +23,36 @@ import java.util.stream.Collectors;
  * @version %I%
  * @since 4/6/2023
  */
-final public class EventTextWriter extends AbstractJCasFileWriter {
+final public class TimexTextWriter extends AbstractJCasFileWriter {
 
 
     static private final Logger LOGGER = Logger.getLogger( "EventTextWriter" );
     static private final String FILE_EXTENSION = ".txt";
 
+    static private final TimeSpan dummyDCT = TimeSpan.of(-1000, -10, -10);
 
     @Override
     public void writeFile( final JCas jCas,
                            final String outputDir,
                            final String documentId,
                            final String fileName ) throws IOException {
-        final File outputFilePath = new File( outputDir , fileName + "_chemo_mentions" + FILE_EXTENSION );
+        final File outputFilePath = new File( outputDir , fileName + "_time_mentions" + FILE_EXTENSION );
         LOGGER.info("Writing " + fileName + FILE_EXTENSION + " to " + outputFilePath.getPath()  +" ...") ;
         try ( Writer writer = new BufferedWriter( new FileWriter( outputFilePath ) ) ) {
-            Map<Sentence, Collection<EventMention>> sent2ColEvents = JCasUtil.indexCovered(
+            Map<Sentence, Collection<TimeMention>> sent2ColEvents = JCasUtil.indexCovered(
                     jCas,
                     Sentence.class,
-                    EventMention.class
+                    TimeMention.class
             );
 
-            Map<Sentence, List<EventMention>> sent2Events = new HashMap<>();
+            Map<Sentence, List<TimeMention>> sent2Events = new HashMap<>();
             sent2ColEvents.forEach(
                     (sentence, events) -> sent2Events.put(
                             sentence,
                             events.stream()
                                     .sorted(
                                             Comparator.comparingInt(
-                                                    EventMention::getBegin
+                                                    TimeMention::getBegin
                                             )
                                     ).collect(Collectors.toList())
                     )
@@ -71,19 +71,20 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
                             sent2Events::containsKey
                     )
                     .forEach(
-                    sentence -> {
-                        try {
-                            writeMention(
-                                    casSentences.indexOf(sentence) + 1,
-                                    sentence,
-                                    sent2Events.get(sentence),
-                                    writer
-                            );
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-            );
+                            sentence -> {
+                                try {
+                                    writeMention(
+                                            casSentences.indexOf(sentence) + 1,
+                                            sentence,
+                                            sent2Events.get(sentence),
+                                            writer
+                                    );
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                ;
+                            }
+                    );
         }
         LOGGER.info( "Finished Writing" );
     }
@@ -98,14 +99,14 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
      * Write a sentence from the document text
      *
      * @param container sentence containing the annotation
-     * @param eventMentions annotations
+     * @param TimeMentions annotations
      * @param writer   writer to which pretty text for the sentence should be written
      * @throws IOException if the writer has issues
      */
     static public void writeMention(
             final int sentIndex,
             final Sentence container,
-            final List<EventMention> eventMentions,
+            final List<TimeMention> TimeMentions,
             final Writer writer
     ) throws IOException {
 
@@ -119,8 +120,8 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
 
         Set<Pair<Integer>> labelToInds = new HashSet<>();
 
-        eventMentions.forEach(
-                eventMention -> labelToInds.add(getSpan(eventMention))
+        TimeMentions.forEach(
+                TimeMention -> labelToInds.add(getSpan(TimeMention))
         );
 
         writer.write(
@@ -134,11 +135,7 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
 
     static private String taggedSentence(Sentence sentence, Set<Pair<Integer>> labelToInds){
         StringBuilder out = new StringBuilder();
-        String tag = "chemo-mention";
-
-        String sentenceText = sentence.getCoveredText().replace("\n", " ");
-        int sentenceBegin = sentence.getBegin();
-        int previous = 0;
+        String tag = "timex";
 
         List<Pair<Integer>> orderedInds = labelToInds
                 .stream()
@@ -151,7 +148,9 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
                         Collectors.toList()
                 );
 
-
+        String sentenceText = sentence.getCoveredText().replace("\n", " ");
+        int sentenceBegin = sentence.getBegin();
+        int previous = 0;
 
         for (Pair<Integer> indices : orderedInds){
             int localBegin = indices.getValue1() - sentenceBegin;
