@@ -141,12 +141,15 @@ final public class TimexTextWriter extends AbstractJCasFileWriter {
 
             String unnormalized = timeMention.getCoveredText();
 
-            Temporal normalized = normalizer.parse(unnormalized, dummyDCT).getOrElse(null);
+            Temporal normalized = null;
+            try {
+                normalized = normalizer.parse(unnormalized, dummyDCT).get();
+            } catch (Exception ignored){}
 
-            if (!(normalized == null)) {
-                out.append(String.format("<%s>", tag));
+            if (normalized != null) {
+                out.append(String.format("<%s> ", tag));
                 out.append(normalized);
-                out.append(String.format("</%s>", tag));
+                out.append(String.format(" </%s>", tag));
             }
             previous = localEnd;
         }

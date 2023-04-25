@@ -269,13 +269,20 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       final Element properties = doc.createElement( "properties" );
       String typeName = "";
       String unnormalizedTimex = timeMention.getCoveredText();
-      String normalizedTimex = String.valueOf( normalizer.parse( unnormalizedTimex, dummyDCT ) );
-      if ( normalizedTimex.equals( "null" ) ){
-         System.err.println( unnormalizedTimex );
-      }
+      Temporal normalizedTimex = null;
+      try{
+         normalizedTimex = normalizer.parse( unnormalizedTimex, dummyDCT ).get();
+      } catch (Exception ignored){}
+
+
 
       final Element normalizedExpression = doc.createElement( "normalizedExpression" );
-      normalizedExpression.setTextContent( normalizedTimex );
+      if ( normalizedTimex != null ){
+         System.err.println( unnormalizedTimex );
+         normalizedExpression.setTextContent( normalizedTimex.timeMLValue() );
+      } else {
+         normalizedExpression.setTextContent( "" );
+      }
 
       final String timeClass = timeMention.getTimeClass();
       if ( timeClass != null && (timeClass.equals( "DOCTIME" ) || timeClass.equals( "SECTIONTIME" ) ) ) {
