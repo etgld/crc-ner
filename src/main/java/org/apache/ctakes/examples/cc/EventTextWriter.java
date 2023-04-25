@@ -132,6 +132,7 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
         writer.write("\n");
     }
 
+
     static private String taggedSentence(Sentence sentence, Set<Pair<Integer>> labelToInds){
         StringBuilder out = new StringBuilder();
         String tag = "chemo-mention";

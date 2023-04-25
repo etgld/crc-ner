@@ -13,5 +13,6 @@ add TokenizerAnnotatorPTB
 load DictionarySubPipe
 
 // to anafora format
-add EventTimeAnaforaWriter SubDirectory=anafora OnlyTemporalEvents=no
-add EventTextWriter SubDirectory=txt
+add EventTimeAnaforaWriter_NORM SubDirectory=anafora OnlyTemporalEvents=no
+add EventTextWriter SubDirectory=event_txt
+add TimexTextWriter SubDirectory=timex_txt

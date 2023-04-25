@@ -11,13 +11,9 @@ import org.apache.ctakes.typesystem.type.textsem.TimeMention;
 import org.apache.uima.fit.descriptor.ConfigurationParameter;
 import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.jcas.JCas;
-import org.clulab.timenorm.scfg.DefaultTokenizer;
-import org.clulab.timenorm.scfg.TemporalExpressionParser;
-import org.clulab.timenorm.scfg.TimeSpan;
+import org.clulab.timenorm.scfg.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-
-import org.clulab.timenorm.scate.*;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -50,9 +46,11 @@ import static org.apache.ctakes.core.pipeline.PipeBitInfo.TypeProduct.DOCUMENT_I
       usables = { DOCUMENT_ID_PREFIX, BASE_TOKEN }
 )
 final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
+
    static private final TemporalExpressionParser normalizer = TemporalExpressionParser.en();
+
    // for now give a 'non time'
-   static private final TimeSpan dummyDCT = TimeSpan.of(-1000, -10, -10);
+   static private final TimeSpan dummyDCT = TimeSpan.of(-999999999, 4, 1);
 
    /**
     * Sometimes you want a file extension that specifies specifics about the corpus, creator and phase.

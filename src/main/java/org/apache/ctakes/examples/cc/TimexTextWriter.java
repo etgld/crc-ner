@@ -10,6 +10,7 @@ import org.apache.uima.jcas.JCas;
 import org.apache.uima.jcas.tcas.Annotation;
 
 import org.clulab.timenorm.scfg.*;
+import scala.util.Success;
 
 import java.io.*;
 import java.util.*;
@@ -28,8 +29,9 @@ final public class TimexTextWriter extends AbstractJCasFileWriter {
 
     static private final Logger LOGGER = Logger.getLogger( "EventTextWriter" );
     static private final String FILE_EXTENSION = ".txt";
-
-    static private final TimeSpan dummyDCT = TimeSpan.of(-1000, -10, -10);
+    private static final TemporalExpressionParser normalizer = TemporalExpressionParser.en();
+    // for now give a 'non time'
+    static private final TimeSpan dummyDCT = TimeSpan.of(-999999999, 4, 1);
 
     @Override
     public void writeFile( final JCas jCas,
@@ -47,9 +49,9 @@ final public class TimexTextWriter extends AbstractJCasFileWriter {
 
             Map<Sentence, List<TimeMention>> sent2Events = new HashMap<>();
             sent2ColEvents.forEach(
-                    (sentence, events) -> sent2Events.put(
+                    (sentence, timexes) -> sent2Events.put(
                             sentence,
-                            events.stream()
+                            timexes.stream()
                                     .sorted(
                                             Comparator.comparingInt(
                                                     TimeMention::getBegin
@@ -90,11 +92,6 @@ final public class TimexTextWriter extends AbstractJCasFileWriter {
     }
 
 
-    static public Pair<Integer> getSpan( final Annotation attribute ){
-        return new Pair<>(attribute.getBegin(), attribute.getEnd());
-    }
-
-
     /**
      * Write a sentence from the document text
      *
@@ -117,50 +114,40 @@ final public class TimexTextWriter extends AbstractJCasFileWriter {
                 )
         );
 
-
-        Set<Pair<Integer>> labelToInds = new HashSet<>();
-
-        TimeMentions.forEach(
-                TimeMention -> labelToInds.add(getSpan(TimeMention))
-        );
-
         writer.write(
                 taggedSentence(
                         container,
-                        labelToInds
+                        TimeMentions
                 )
         );
         writer.write("\n");
     }
 
-    static private String taggedSentence(Sentence sentence, Set<Pair<Integer>> labelToInds){
+    static private String taggedSentence(Sentence sentence, List<TimeMention> timeMentions){
         StringBuilder out = new StringBuilder();
         String tag = "timex";
 
-        List<Pair<Integer>> orderedInds = labelToInds
-                .stream()
-                .sorted(
-                        Comparator
-                                .comparing(
-                                        Pair::getValue1
-                                )
-                ).collect(
-                        Collectors.toList()
-                );
 
         String sentenceText = sentence.getCoveredText().replace("\n", " ");
         int sentenceBegin = sentence.getBegin();
         int previous = 0;
 
-        for (Pair<Integer> indices : orderedInds){
-            int localBegin = indices.getValue1() - sentenceBegin;
-            int localEnd = indices.getValue2() - sentenceBegin;
+        for (TimeMention timeMention : timeMentions){
+            int localBegin = timeMention.getBegin() - sentenceBegin;
+            int localEnd = timeMention.getEnd() - sentenceBegin;
             if (previous < localBegin) {
                 out.append(sentenceText, previous, localBegin);
             }
-            out.append(String.format("<%s>", tag));
-            out.append(sentenceText, localBegin, localEnd);
-            out.append(String.format("</%s>", tag));
+
+            String unnormalized = timeMention.getCoveredText();
+
+            Temporal normalized = normalizer.parse(unnormalized, dummyDCT).getOrElse(null);
+
+            if (!(normalized == null)) {
+                out.append(String.format("<%s>", tag));
+                out.append(normalized);
+                out.append(String.format("</%s>", tag));
+            }
             previous = localEnd;
         }
 
