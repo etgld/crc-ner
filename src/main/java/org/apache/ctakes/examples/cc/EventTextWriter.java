@@ -160,9 +160,9 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
             if (previous < localBegin) {
                 out.append(sentenceText, previous, localBegin);
             }
-            out.append(String.format("<%s>", tag));
+            out.append(String.format("<%s> ", tag));
             out.append(sentenceText, localBegin, localEnd);
-            out.append(String.format("</%s>", tag));
+            out.append(String.format(" </%s>", tag));
             previous = localEnd;
         }
 

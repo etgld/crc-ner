@@ -17,7 +17,7 @@ load DictionarySubPipe
 //load DefaultFastPipeline
 
 // 'Generic' Events.  Use addDescription and let the EventAnnotator set itself up with defaults.
-//addDescription EventAnnotator
+addDescription EventAnnotator
 
 // Times.  Use addLogged to log start and finish of processing.  There aren't default models, so set specifically
 add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
