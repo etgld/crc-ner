@@ -1,0 +1,24 @@
+
+Sentence: 1
+
+<timex> today </timex> , I ate a TON of chemotherapy medications, namely gemzar, carboplatin, and taxol.
+
+__HANDLED__ literal : today	timeML : -999999999-04-01	full : TimeSpan(-999999999-04-01T00:00Z,-999999999-04-02T00:00Z,Period(Map(Days -> 1),Exact),Exact)
+
+
+
+
+
+Sentence: 2
+
+I ate some <timex> recently </timex>, <timex> yesterday </timex> , <timex> 5 / 5 / 1845 </timex> ,  to be exact, at 11pm, and it tasted like sardines.
+
+__HANDLED__ literal : recently	timeML : PAST_REF	full : TimeSpan(-999999999-01-01T00:00Z,-999999999-04-01T00:00Z,Period(Map(org.clulab.time.UNSPECIFIED$@56ccd751 -> 2147483647),Exact),Approx)
+
+__HANDLED__ literal : yesterday	timeML : -999999999-03-31	full : TimeSpan(-999999999-03-31T00:00Z,-999999999-04-01T00:00Z,Period(Map(Days -> 1),Exact),Exact)
+
+__HANDLED__ literal : 5 / 5 / 1845	timeML : 1845-05-05	full : TimeSpan(1845-05-05T00:00Z,1845-05-06T00:00Z,Period(Map(Days -> 1),Exact),Exact)
+
+
+
+

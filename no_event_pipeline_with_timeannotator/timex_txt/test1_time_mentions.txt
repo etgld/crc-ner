@@ -1,0 +1,34 @@
+
+Sentence: 1
+
+during <timex> today </timex> , the fourth <timex> friday </timex> of <timex> january , I ate </timex> <timex> a </timex> TON of chemotherapy medications, namely gemzar, carboplatin, and taxol.
+
+__HANDLED__ literal : today	timeML : -999999999-04-01	full : TimeSpan(-999999999-04-01T00:00Z,-999999999-04-02T00:00Z,Period(Map(Days -> 1),Exact),Exact)
+
+__HANDLED__ literal : friday	timeML : -999999999-03-30	full : TimeSpan(-999999999-03-30T00:00Z,-999999999-03-31T00:00Z,Period(Map(Days -> 1),Exact),Exact)
+
+__HANDLED__ literal : january , I ate	timeML : -999999999-01	full : TimeSpan(-999999999-01-01T00:00Z,-999999999-02-01T00:00Z,Period(Map(Months -> 1),Exact),Exact)
+
+__UNHANDLED__ literal : a
+
+
+
+
+
+Sentence: 2
+
+I ate some <timex> recently </timex> as well, <timex> yesterday </timex> , the fourth <timex> thursday </timex> of <timex> january, to be </timex> <timex> exact </timex>, at 11pm, and it tasted like sardines.
+
+__HANDLED__ literal : recently	timeML : PAST_REF	full : TimeSpan(-999999999-01-01T00:00Z,-999999999-04-01T00:00Z,Period(Map(org.clulab.time.UNSPECIFIED$@1d782abe -> 2147483647),Exact),Approx)
+
+__HANDLED__ literal : yesterday	timeML : -999999999-03-31	full : TimeSpan(-999999999-03-31T00:00Z,-999999999-04-01T00:00Z,Period(Map(Days -> 1),Exact),Exact)
+
+__HANDLED__ literal : thursday	timeML : -999999999-03-29	full : TimeSpan(-999999999-03-29T00:00Z,-999999999-03-30T00:00Z,Period(Map(Days -> 1),Exact),Exact)
+
+__UNHANDLED__ literal : january, to be
+
+__UNHANDLED__ literal : exact
+
+
+
+
