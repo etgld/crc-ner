@@ -5,6 +5,7 @@ import org.apache.ctakes.core.util.Pair;
 import org.apache.ctakes.temporal.ae.EventAnnotator;
 import org.apache.ctakes.typesystem.type.refsem.Event;
 import org.apache.ctakes.typesystem.type.textsem.EventMention;
+import org.apache.ctakes.typesystem.type.textsem.MedicationEventMention;
 import org.apache.ctakes.typesystem.type.textsem.ProcedureMention;
 import org.apache.ctakes.typesystem.type.textspan.Sentence;
 import org.apache.log4j.Logger;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
  * @version %I%
  * @since 4/6/2023
  */
-final public class EventTextWriter extends AbstractJCasFileWriter {
+final public class MedEventTextWriter extends AbstractJCasFileWriter {
 
 
     static private final Logger LOGGER = Logger.getLogger( "EventTextWriter" );
@@ -36,23 +37,23 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
                            final String outputDir,
                            final String documentId,
                            final String fileName ) throws IOException {
-        final File outputFilePath = new File( outputDir , fileName + "_event_mentions" + FILE_EXTENSION );
+        final File outputFilePath = new File( outputDir , fileName + "_chemo_mentions" + FILE_EXTENSION );
         LOGGER.info("Writing " + fileName + FILE_EXTENSION + " to " + outputFilePath.getPath()  +" ...") ;
         try ( Writer writer = new BufferedWriter( new FileWriter( outputFilePath ) ) ) {
-            Map<Sentence, Collection<EventMention>> sent2ColEvents = JCasUtil.indexCovered(
+            Map<Sentence, Collection<MedicationEventMention>> sent2ColEvents = JCasUtil.indexCovered(
                     jCas,
                     Sentence.class,
-                    EventMention.class
+                    MedicationEventMention.class
             );
 
-            Map<Sentence, List<EventMention>> sent2Events = new HashMap<>();
+            Map<Sentence, List<MedicationEventMention>> sent2Events = new HashMap<>();
             sent2ColEvents.forEach(
                     (sentence, events) -> sent2Events.put(
                             sentence,
                             events.stream()
                                     .sorted(
                                             Comparator.comparingInt(
-                                                    EventMention::getBegin
+                                                    MedicationEventMention::getBegin
                                             )
                                     ).collect(Collectors.toList())
                     )
@@ -71,19 +72,19 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
                             sent2Events::containsKey
                     )
                     .forEach(
-                    sentence -> {
-                        try {
-                            writeMention(
-                                    casSentences.indexOf(sentence) + 1,
-                                    sentence,
-                                    sent2Events.get(sentence),
-                                    writer
-                            );
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-            );
+                            sentence -> {
+                                try {
+                                    writeMention(
+                                            casSentences.indexOf(sentence) + 1,
+                                            sentence,
+                                            sent2Events.get(sentence),
+                                            writer
+                                    );
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                    );
         }
         LOGGER.info( "Finished Writing" );
     }
@@ -105,7 +106,7 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
     static public void writeMention(
             final int sentIndex,
             final Sentence container,
-            final List<EventMention> eventMentions,
+            final List<MedicationEventMention> eventMentions,
             final Writer writer
     ) throws IOException {
 

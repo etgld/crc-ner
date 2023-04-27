@@ -10,31 +10,18 @@ add MrsDrSentenceJoiner
 //  Tokenize by penn treebank rules.
 add TokenizerAnnotatorPTB
 
-set Blacklist=org/apache/ctakes/dictionary/lookup/fast/blacklists/today.bsv
+//set Blacklist=/org/apache/ctakes/dictionary/lookup/fast/blacklists/today.bsv
 load DictionarySubPipe
 
-add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
-
-// Default Clinical Pipeline
-//load DefaultFastPipeline
-
-// once more.. with (possible(?)) dependencies
-addDescription POSTagger
-
-// Add Chunkers
-load ChunkerSubPipe
-
-// just the entity stuff from the above
-load AttributeCleartkSubPipe
 
 // 'Generic' Events.  Use addDescription and let the EventAnnotator set itself up with defaults.
 addDescription EventAnnotator
 
 // Times.  Use addLogged to log start and finish of processing.  There aren't default models, so set specifically
 //add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
-// add TimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
 
 // to anafora format
 add EventTimeAnaforaWriter_NORM SubDirectory=anafora OnlyTemporalEvents=no
 add EventTextWriter SubDirectory=event_txt
+add MedEventTextWriter SubDirectory=med_txt
 add TimexTextWriter SubDirectory=timex_txt

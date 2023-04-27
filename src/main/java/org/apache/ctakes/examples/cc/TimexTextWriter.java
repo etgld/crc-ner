@@ -2,6 +2,8 @@ package org.apache.ctakes.examples.cc;
 
 import org.apache.ctakes.core.cc.AbstractJCasFileWriter;
 import org.apache.ctakes.core.util.Pair;
+import org.apache.ctakes.temporal.ae.TimeAnnotator;
+import org.apache.ctakes.typesystem.type.textsem.TimeAnnotation;
 import org.apache.ctakes.typesystem.type.textsem.TimeMention;
 import org.apache.ctakes.typesystem.type.textspan.Sentence;
 import org.apache.log4j.Logger;
@@ -41,20 +43,20 @@ final public class TimexTextWriter extends AbstractJCasFileWriter {
         final File outputFilePath = new File( outputDir , fileName + "_time_mentions" + FILE_EXTENSION );
         LOGGER.info("Writing " + fileName + FILE_EXTENSION + " to " + outputFilePath.getPath()  +" ...") ;
         try ( Writer writer = new BufferedWriter( new FileWriter( outputFilePath ) ) ) {
-            Map<Sentence, Collection<TimeMention>> sent2ColEvents = JCasUtil.indexCovered(
+            Map<Sentence, Collection<TimeAnnotation>> sent2ColEvents = JCasUtil.indexCovered(
                     jCas,
                     Sentence.class,
-                    TimeMention.class
+                    TimeAnnotation.class
             );
 
-            Map<Sentence, List<TimeMention>> sent2Events = new HashMap<>();
+            Map<Sentence, List<TimeAnnotation>> sent2Events = new HashMap<>();
             sent2ColEvents.forEach(
                     (sentence, timexes) -> sent2Events.put(
                             sentence,
                             timexes.stream()
                                     .sorted(
                                             Comparator.comparingInt(
-                                                    TimeMention::getBegin
+                                                    TimeAnnotation::getBegin
                                             )
                                     ).collect(Collectors.toList())
                     )
@@ -103,7 +105,7 @@ final public class TimexTextWriter extends AbstractJCasFileWriter {
     static public void writeMention(
             final int sentIndex,
             final Sentence container,
-            final List<TimeMention> TimeMentions,
+            final List<TimeAnnotation> TimeMentions,
             final Writer writer
     ) throws IOException {
 
@@ -123,7 +125,7 @@ final public class TimexTextWriter extends AbstractJCasFileWriter {
         writer.write("\n");
     }
 
-    static private String taggedSentence(Sentence sentence, List<TimeMention> timeMentions){
+    static private String taggedSentence(Sentence sentence, List<TimeAnnotation> timeMentions){
         StringBuilder out = new StringBuilder();
         String tag = "timex";
 
@@ -134,7 +136,7 @@ final public class TimexTextWriter extends AbstractJCasFileWriter {
 
         List<String> mentionOuts = new ArrayList<>();
 
-        for (TimeMention timeMention : timeMentions){
+        for (TimeAnnotation timeMention : timeMentions){
             int localBegin = timeMention.getBegin() - sentenceBegin;
             int localEnd = timeMention.getEnd() - sentenceBegin;
             if (previous < localBegin) {
