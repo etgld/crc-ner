@@ -23,8 +23,8 @@
 000|T121|doxorubicin
 000|T121|taxol
 000|T121|gemzar
-000|T079|today
-000|T079|yesterday
-000|T079|thursday
-000|T079|friday
-000|T079|january
+//000|T079|today
+//000|T079|yesterday
+//000|T079|thursday
+//000|T079|friday
+//000|T079|january

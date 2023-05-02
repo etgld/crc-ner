@@ -10,18 +10,9 @@ add MrsDrSentenceJoiner
 //  Tokenize by penn treebank rules.
 add TokenizerAnnotatorPTB
 
-//set Blacklist=/org/apache/ctakes/dictionary/lookup/fast/blacklists/today.bsv
-load DictionarySubPipe
 
+add RuleBasedTimeAnnotator
 
-// 'Generic' Events.  Use addDescription and let the EventAnnotator set itself up with defaults.
-addDescription EventAnnotator
+add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
 
-// Times.  Use addLogged to log start and finish of processing.  There aren't default models, so set specifically
-//add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
-
-// to anafora format
-add EventTimeAnaforaWriter_NORM SubDirectory=anafora OnlyTemporalEvents=no
-add EventTextWriter SubDirectory=event_txt
-add MedEventTextWriter SubDirectory=med_txt
-add TimexTextWriter SubDirectory=timex_txt
+add ComparisonWriter SubDirectory=rule_svm_comparison
