@@ -33,7 +33,7 @@ final public class TimeEventTextWriter extends AbstractJCasFileWriter {
     static private final String FILE_EXTENSION = ".txt";
     private static final TemporalExpressionParser normalizer = TemporalExpressionParser.en();
     // for now give a 'non time'
-    static private final TimeSpan dummyDCT = TimeSpan.of(-999999999, 4, 1);
+    static private final TimeSpan dummyDCT = TimeSpan.of(2017, 4, 1);
 
     @Override
     public void writeFile( final JCas jCas,
