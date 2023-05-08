@@ -14,19 +14,16 @@ import org.apache.uima.jcas.JCas;
 import org.apache.uima.jcas.cas.TOP;
 import org.apache.uima.resource.ResourceInitializationException;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @PipeBitInfo(
         name = "EventFilter ( TxTimelines )",
-        description = " Someday will need to ask Sean if there's a way to generify these things and pass the classes via piper files",
-        role = PipeBitInfo.Role.SPECIAL,
-        products = { PipeBitInfo.TypeProduct.IDENTIFIED_ANNOTATION }
+        description = " test ",
+        dependencies = {PipeBitInfo.TypeProduct.EVENT },
+        products = { PipeBitInfo.TypeProduct.EVENT }
 )
 
 public class EventFilter extends JCasAnnotator_ImplBase {
@@ -38,9 +35,11 @@ public class EventFilter extends JCasAnnotator_ImplBase {
             name = PARAM_FILTER_LIST,
             description = "The way we store files for processing.  Aligned pair of directories "
     )
+
+
     private String filterList;
 
-    public static AnalysisEngineDescription getDescription(String filterList)
+    static public AnalysisEngineDescription createEngineDescription( String filterList )
             throws ResourceInitializationException {
         return AnalysisEngineFactory.createEngineDescription(
                 EventFilter.class,
@@ -48,6 +47,14 @@ public class EventFilter extends JCasAnnotator_ImplBase {
                 filterList
         );
     }
+
+    static public AnalysisEngineDescription createAnnotatorDescription()
+            throws ResourceInitializationException {
+        return AnalysisEngineFactory.createEngineDescription(
+                EventFilter.class
+        );
+    }
+
     private final Set<String> terms = getTerms();
     @Override
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
@@ -72,22 +79,22 @@ public class EventFilter extends JCasAnnotator_ImplBase {
     private Set<String> getTerms() {
         if ( filterList != null && !filterList.isEmpty() ) {
             LOGGER.info( "Using Dictionary Descriptor: " + filterList );
-        try ( InputStream descriptorStream = FileLocator.getAsStream( filterList ) ) {
-            return new BufferedReader(
-                    new InputStreamReader(
-                            descriptorStream,
-                            StandardCharsets.UTF_8
-                    )
-            )
-                    .lines()
-                    .map(String::toLowerCase)
-                    .collect(
-                            Collectors.toSet()
-                    );
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    } else {
+            try ( InputStream descriptorStream = FileLocator.getAsStream( filterList ) ) {
+                return new BufferedReader(
+                        new InputStreamReader(
+                                descriptorStream,
+                                StandardCharsets.UTF_8
+                        )
+                )
+                        .lines()
+                        .map(String::toLowerCase)
+                        .collect(
+                                Collectors.toSet()
+                        );
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
             throw new RuntimeException("Missing Filter List");
         }
     }

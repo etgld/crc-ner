@@ -1,8 +1,0 @@
-
-Sentence: 1
-
-today , I ate a <chemo-mention> TON </chemo-mention> of <chemo-mention> chemotherapy </chemo-mention> <chemo-mention> medications </chemo-mention>, namely <chemo-mention> gemzar </chemo-mention>, <chemo-mention> carboplatin </chemo-mention>, and <chemo-mention> taxol </chemo-mention>.
-
-Sentence: 2
-
-I ate some recently, <chemo-mention> yesterday </chemo-mention> , 5 / 5 / 1845 ,  to be exact, at 11pm, and it tasted like <chemo-mention> sardines </chemo-mention>.
