@@ -21,7 +21,7 @@ load AttributeCleartkSubPipe
 
 addDescription EventAnnotator
 
-addDescription EventFilter filterList=JEFF
+addDescription EventFilter filterList=/resources/fake_notes/filterlist.txt
 
 add EventTextWriter SubDirectory=events
 
