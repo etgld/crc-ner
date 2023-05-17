@@ -46,6 +46,10 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
     }
 
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
+        // this is very very brute force, it behooves us to check
+        // how the dictionary lookup works since there are ways for even
+        // fuzzy matching to be more efficient than this but for
+        // low demand and small exclusion lists it's not _too_ much of a trade off
         JCasUtil.select( jCas, EventMention.class )
                 .stream()
                 .filter(
