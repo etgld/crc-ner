@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 @PipeBitInfo(
         name = "EventFilter ( TxTimelines )",
-        description = " test ",
+        description = " Filters event mentions which contain any of the provided set of terms ( to be called after EventAnnotator ) ",
         dependencies = { PipeBitInfo.TypeProduct.EVENT },
         products = { PipeBitInfo.TypeProduct.EVENT }
 )
@@ -36,41 +36,6 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
             description = "The way we store files for processing.  Aligned pair of directories "
     )
     private String filterList;
-
-    /*
-    static public AnalysisEngineDescription createEngineDescription( String filterList )
-            throws ResourceInitializationException {
-        return AnalysisEngineFactory.createEngineDescription(
-                EventFilter.class,
-                EventFilter.PARAM_FILTER_LIST,
-                filterList
-        );
-    }
-
-    static public AnalysisEngineDescription createAnnotatorDescription()
-            throws ResourceInitializationException {
-        return AnalysisEngineFactory.createEngineDescription(
-                EventFilter.class
-        );
-    }
-
-    static public AnalysisEngineDescription getEngineDescription( String filterList )
-            throws ResourceInitializationException {
-        return AnalysisEngineFactory.createEngineDescription(
-                EventFilter.class,
-                EventFilter.PARAM_FILTER_LIST,
-                filterList
-        );
-    }
-
-    static public AnalysisEngineDescription getAnnotatorDescription()
-            throws ResourceInitializationException {
-        return AnalysisEngineFactory.createEngineDescription(
-                EventFilter.class
-        );
-    }
-
-     */
 
     private Set<String> terms;
 
