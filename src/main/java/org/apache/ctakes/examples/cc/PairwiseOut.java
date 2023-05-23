@@ -2,18 +2,15 @@ package org.apache.ctakes.examples.cc;
 
 import org.apache.ctakes.core.cc.AbstractJCasFileWriter;
 import org.apache.ctakes.core.util.Pair;
-import org.apache.ctakes.temporal.ae.TimeAnnotator;
 import org.apache.ctakes.typesystem.type.textsem.EventMention;
-import org.apache.ctakes.typesystem.type.textsem.TimeAnnotation;
 import org.apache.ctakes.typesystem.type.textsem.TimeMention;
 import org.apache.ctakes.typesystem.type.textspan.Sentence;
 import org.apache.log4j.Logger;
 import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.jcas.JCas;
 import org.apache.uima.jcas.tcas.Annotation;
-
-import org.clulab.timenorm.scfg.*;
-import scala.util.Success;
+import org.clulab.timenorm.scfg.TemporalExpressionParser;
+import org.clulab.timenorm.scfg.TimeSpan;
 
 import java.io.*;
 import java.util.*;
@@ -201,8 +198,63 @@ final public class PairwiseOut extends AbstractJCasFileWriter {
     }
 
     static private String taggedSentence( Sentence sentence,
-                                          Pair<Annotation> timeEventPairs ){
-        return "";
+                                          Pair<Annotation> timeEventPair ){
+        StringBuilder out = new StringBuilder();
+
+        String tag;
+
+        String sentenceText = sentence.getCoveredText().replace("\n", " ");
+        int sentenceBegin = sentence.getBegin();
+        int previous = 0;
+
+        TimeMention timeMention = (TimeMention) timeEventPair.getValue1();
+        EventMention eventMention = (EventMention) timeEventPair.getValue2();
+
+        int firstBegin, firstEnd, secondBegin, secondEnd = -1;
+        String firstText, secondText, firstTag, secondTag;
+
+        if ( timeMention.getBegin() < eventMention.getBegin() ) {
+            firstBegin = timeMention.getBegin() - sentenceBegin;
+            firstEnd = timeMention.getEnd() - sentenceBegin;
+
+            secondBegin = eventMention.getBegin() - sentenceBegin;
+            secondEnd = eventMention.getEnd() - sentenceBegin;
+
+            try {
+                firstText = normalizer.parse(timeMention.getCoveredText(), dummyDCT).get().toString();
+            } catch (Exception ignored) {
+                firstText = timeMention.getCoveredText();
+            }
+
+            secondText = eventMention.getCoveredText();
+
+            firstTag = "t";
+            secondTag = "e";
+        } else {
+            firstBegin = timeMention.getBegin() - sentenceBegin;
+            firstEnd = timeMention.getEnd() - sentenceBegin;
+
+            secondBegin = eventMention.getBegin() - sentenceBegin;
+            secondEnd = eventMention.getEnd() - sentenceBegin;
+
+            try {
+                secondText = normalizer.parse(timeMention.getCoveredText(), dummyDCT).get().toString();
+            } catch (Exception ignored) {
+                secondText = timeMention.getCoveredText();
+            }
+
+            firstText = eventMention.getCoveredText();
+            firstTag = "e";
+            secondTag = "t";
+        }
+
+        out.append(sentenceText, previous, firstBegin);
+        out.append(String.format("<%s>%s</%s>", firstTag, firstText, firstTag));
+        out.append(sentenceText, firstEnd, secondBegin);
+        out.append(String.format("<%s>%s</%s>", secondTag, secondText, secondTag));
+        out.append(sentenceText, secondEnd, sentenceText.length());
+
+        return out.toString();
     }
 
     static private String taggedSentence( Sentence sentence,
@@ -240,6 +292,7 @@ final public class PairwiseOut extends AbstractJCasFileWriter {
         out.append(normalized);
         out.append(sentenceText, localBegin, localEnd);
         out.append(String.format(" </%s>", tag));
+        out.append( sentenceText, localEnd, sentenceText.length() );
 
         return out.toString();
     }
