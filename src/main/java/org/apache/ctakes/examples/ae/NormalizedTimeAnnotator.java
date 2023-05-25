@@ -1,4 +1,4 @@
-package org.apache.ctakes.examples.cc;
+package org.apache.ctakes.examples.ae;
 
 import org.apache.ctakes.core.fsm.machine.DateFSM;
 import org.apache.ctakes.core.fsm.machine.TimeFSM;

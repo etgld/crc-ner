@@ -1,4 +1,4 @@
-package org.apache.ctakes.examples.cc;
+package org.apache.ctakes.examples.ae;
 
 import org.apache.ctakes.contexttokenizer.ae.ContextDependentTokenizerAnnotator;
 import org.apache.ctakes.core.ae.TokenizerAnnotator;
