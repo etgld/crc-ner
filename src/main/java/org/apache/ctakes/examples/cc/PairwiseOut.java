@@ -1,5 +1,6 @@
 package org.apache.ctakes.examples.cc;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.ctakes.core.cc.AbstractJCasFileWriter;
 import org.apache.ctakes.core.util.Pair;
 import org.apache.ctakes.typesystem.type.textsem.EventMention;
@@ -38,7 +39,7 @@ final public class PairwiseOut extends AbstractJCasFileWriter {
                            final String outputDir,
                            final String documentId,
                            final String fileName ) throws IOException {
-        final File outputFilePath = new File( outputDir , fileName + "_pairwise" + FILE_EXTENSION );
+        final File outputFilePath = new File( outputDir , "ID107_" + FilenameUtils.getBaseName(fileName) + FILE_EXTENSION );
         LOGGER.info("Writing " + fileName + FILE_EXTENSION + " to " + outputFilePath.getPath()  +" ...") ;
 
 
@@ -210,7 +211,7 @@ final public class PairwiseOut extends AbstractJCasFileWriter {
         TimeMention timeMention = (TimeMention) timeEventPair.getValue1();
         EventMention eventMention = (EventMention) timeEventPair.getValue2();
 
-        int firstBegin, firstEnd, secondBegin, secondEnd = -1;
+        int firstBegin, firstEnd, secondBegin, secondEnd;
         String firstText, secondText, firstTag, secondTag;
 
         if ( timeMention.getBegin() < eventMention.getBegin() ) {
@@ -221,7 +222,7 @@ final public class PairwiseOut extends AbstractJCasFileWriter {
             secondEnd = eventMention.getEnd() - sentenceBegin;
 
             try {
-                firstText = normalizer.parse(timeMention.getCoveredText(), dummyDCT).get().toString();
+                firstText = normalizer.parse(timeMention.getCoveredText(), dummyDCT).get().timeMLValue();
             } catch (Exception ignored) {
                 firstText = timeMention.getCoveredText();
             }
@@ -231,14 +232,14 @@ final public class PairwiseOut extends AbstractJCasFileWriter {
             firstTag = "t";
             secondTag = "e";
         } else {
-            firstBegin = timeMention.getBegin() - sentenceBegin;
-            firstEnd = timeMention.getEnd() - sentenceBegin;
+            secondBegin = timeMention.getBegin() - sentenceBegin;
+            secondEnd = timeMention.getEnd() - sentenceBegin;
 
-            secondBegin = eventMention.getBegin() - sentenceBegin;
-            secondEnd = eventMention.getEnd() - sentenceBegin;
+            firstBegin = eventMention.getBegin() - sentenceBegin;
+            firstEnd = eventMention.getEnd() - sentenceBegin;
 
             try {
-                secondText = normalizer.parse(timeMention.getCoveredText(), dummyDCT).get().toString();
+                secondText = normalizer.parse(timeMention.getCoveredText(), dummyDCT).get().timeMLValue();
             } catch (Exception ignored) {
                 secondText = timeMention.getCoveredText();
             }
@@ -247,6 +248,23 @@ final public class PairwiseOut extends AbstractJCasFileWriter {
             firstTag = "e";
             secondTag = "t";
         }
+
+        if ( secondBegin <= firstEnd ){
+            // I don't even care anymore
+            secondBegin = firstEnd + 1;
+        }
+
+        /*
+        System.err.println(sentenceText);
+        System.err.println(timeMention.getCoveredText());
+        System.err.println(eventMention.getCoveredText());
+        System.err.println(firstText);
+        System.err.printf("%d %d\n", firstBegin, firstEnd);
+        System.err.println(secondText);
+        System.err.printf("%d %d\n", secondBegin, secondEnd);
+
+         */
+
 
         out.append(sentenceText, previous, firstBegin);
         out.append(String.format("<%s>%s</%s>", firstTag, firstText, firstTag));
@@ -270,9 +288,6 @@ final public class PairwiseOut extends AbstractJCasFileWriter {
 
         int localBegin = annotation.getBegin() - sentenceBegin;
         int localEnd = annotation.getEnd() - sentenceBegin;
-        if (previous < localBegin) {
-            out.append(sentenceText, previous, localBegin);
-        }
 
         String unnormalized = annotation.getCoveredText();
 
@@ -280,7 +295,7 @@ final public class PairwiseOut extends AbstractJCasFileWriter {
         if ( annotation instanceof TimeMention ) {
             tag = "t";
             try {
-                normalized = normalizer.parse(unnormalized, dummyDCT).get().toString();
+                normalized = normalizer.parse(unnormalized, dummyDCT).get().timeMLValue();
             } catch (Exception ignored) {
                 normalized = unnormalized;
             }
@@ -288,10 +303,9 @@ final public class PairwiseOut extends AbstractJCasFileWriter {
             tag = "e";
             normalized = unnormalized;
         }
-        out.append(String.format("<%s> ", tag));
-        out.append(normalized);
-        out.append(sentenceText, localBegin, localEnd);
-        out.append(String.format(" </%s>", tag));
+
+        out.append( sentenceText, previous, localBegin) ;
+        out.append( String.format( "<%s>%s</%s>", tag, normalized, tag ) );
         out.append( sentenceText, localEnd, sentenceText.length() );
 
         return out.toString();

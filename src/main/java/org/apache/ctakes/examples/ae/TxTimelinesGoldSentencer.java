@@ -1,5 +1,6 @@
 package org.apache.ctakes.examples.ae;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.ctakes.core.pipeline.PipeBitInfo;
 import org.apache.ctakes.typesystem.type.textspan.Paragraph;
 import org.apache.ctakes.typesystem.type.textspan.Sentence;
@@ -7,6 +8,7 @@ import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.fit.component.JCasAnnotator_ImplBase;
 import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.jcas.JCas;
+import org.cleartk.util.ViewUriUtil;
 
 import java.util.Arrays;
 
@@ -28,14 +30,15 @@ public class TxTimelinesGoldSentencer extends JCasAnnotator_ImplBase {
     @Override
     public void process( final JCas jcas ) throws AnalysisEngineProcessException {
         String documentText = jcas.getDocumentText();
-        int previous = 0;
 
-        String[] protoSentences = documentText.split( "\\.|;" );
-        for ( String sent : protoSentences ) {
-            final Sentence sentence = new Sentence( jcas, previous, previous + sent.length() );
-            sentence.addToIndexes();
-            previous += sent.length();
-        }
+        Arrays.asList(documentText.split("[.;]")).forEach(
+                protoSent -> {
+                    String _sentence = protoSent.trim();
+                    int sentBegin = documentText.indexOf( _sentence );
+                    final Sentence sentence = new Sentence( jcas, sentBegin, sentBegin + _sentence.length() );
+                    sentence.addToIndexes();
+                }
+        );
     }
 
 }

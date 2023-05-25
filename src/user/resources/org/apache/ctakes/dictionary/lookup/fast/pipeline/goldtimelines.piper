@@ -1,4 +1,9 @@
+add SimpleSegmentAnnotator
+
 add TxTimelinesGoldSentencer
+
+add TokenizerAnnotatorPTB
+
 
 load DictionarySubPipe
 
