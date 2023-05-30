@@ -261,14 +261,25 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
                                   Integer.parseInt( docTimeComponents[ 1 ] ),
                                   Integer.parseInt( docTimeComponents[ 2 ] ) );
 
+
+
+
       final List<TimeMention> timeMentions = new ArrayList<>( JCasUtil.select( jCas, TimeMention.class ) );
       timeMentions.sort( Comparator.comparingInt( TimeMention::getBegin )
                                     .thenComparingInt( TimeMention::getEnd ) );
       int idNumber = startId;
+
+      // DOCTIME
+      annotations.appendChild( createDOCTIME( DCT.timeMLValue(), documentId, idNumber, doc ) );
+      idNumber++;
+
       for ( TimeMention timeMention : timeMentions ) {
          annotations.appendChild( createTimeElement( timeMention, DCT, documentId, idNumber, doc ) );
          idNumber++;
       }
+
+
+
       return idNumber + 1;
    }
 
@@ -286,7 +297,6 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       } catch (Exception ignored){}
 
 
-
       final Element normalizedExpression = doc.createElement( "normalizedExpression" );
       if ( normalizedTimex != null ){
          System.err.println( unnormalizedTimex );
@@ -298,12 +308,7 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       final String timeClass = timeMention.getTimeClass();
       if ( timeClass != null && ( timeClass.equals( "DOCTIME" ) || timeClass.equals( "SECTIONTIME" ) ) ) {
          typeName = timeClass;
-         final Element classE = doc.createElement( "Class" );
-
-         // properties.setTextContent( "" );
-         // properties.appendChild( normalizedExpression );
-         // maybe this does it ?
-         properties.appendChild( DCT.timeMLValue() );
+         properties.appendChild( normalizedExpression );
       } else { // inserting and normalizing here
          typeName = "TIMEX3";
          final Element classE = doc.createElement( "Class" );
@@ -341,5 +346,31 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       return base;
    }
 
+   static private Element createDOCTIME( final String normalizedTimex,
+                                         final String documentId,
+                                         final int idNumber,
+                                         final Document doc ) {
 
+      final Element docTimeNode = doc.createElement( "entity" );
+      final String eventID = idNumber + "@e@" + documentId + "@system";
+      final Element id = doc.createElement( "id" );
+      id.setTextContent( eventID );
+      final Element type = doc.createElement( "type" );
+      type.setTextContent( "DOCTIME" );
+      final Element parentsType = doc.createElement( "parentsType" );
+      parentsType.setTextContent( "TemporalEntities" );
+
+      final Element properties = doc.createElement( "properties" );
+      final Element normalizedExpression = doc.createElement( "normalizedExpression" );
+      normalizedExpression.setTextContent( normalizedTimex );
+      properties.appendChild( normalizedExpression );
+
+
+      docTimeNode.appendChild( id );
+      docTimeNode.appendChild( type );
+      docTimeNode.appendChild( parentsType );
+      docTimeNode.appendChild( properties );
+
+      return docTimeNode;
+   }
 }
