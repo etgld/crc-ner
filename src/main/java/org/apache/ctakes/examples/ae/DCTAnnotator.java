@@ -33,6 +33,7 @@ public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_Im
 
     @Override
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
+        // could use some refactoring
         final SourceData sourceData = SourceMetadataUtil.getOrCreateSourceData( jCas );
 
         String fileName = FilenameUtils.getBaseName( ViewUriUtil.getURI( jCas ).getPath() );
@@ -61,7 +62,7 @@ public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_Im
         String rawDCT = principalDateLine
                 .map(
                         s -> s.replaceAll(
-                                "[^\\d]]",
+                                "\\D",
                                 ""
                         )
                 )
