@@ -12,7 +12,6 @@ import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.jcas.JCas;
 import org.apache.uima.resource.ResourceInitializationException;
-import org.cleartk.util.ViewUriUtil;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -20,8 +19,6 @@ import java.util.Optional;
 @PipeBitInfo(
         name = "DCTAnnotator ( TxTimelines )",
         description = " Gets the DCT either from the note filename ( if the filename conforms to spec ) or from the header if it's a UPMC note" //,
-        //dependencies = { PipeBitInfo.TypeProduct.EVENT },
-        //products = { PipeBitInfo.TypeProduct.DOC }
 )
 
 public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_ImplBase {
@@ -59,7 +56,7 @@ public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_Im
         }
 
         // Otherwise this is a UPMC note
-        Optional<String> principalDateLine = Arrays.stream(jCas.getDocumentText().split("\n"))
+        Optional<String> principalDateLine = Arrays.stream( jCas.getDocumentText().split( "\n" ) )
                 .filter( s -> s.startsWith( "Principal Date" ) )
                 .findFirst();
 
@@ -70,7 +67,7 @@ public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_Im
                                 ""
                         )
                 )
-                .orElse("UNK");
+                .orElse( "UNK" );
 
         if ( rawDCT.equals( "UNK" ) ){
             LOGGER.info( "DeepPhe Non-Spec Note" + fileName + ": Could Not Find Principal Date In Header! Resorting to DocTimeApproximator" );
