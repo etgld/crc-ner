@@ -62,7 +62,7 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
    @ConfigurationParameter(
          name = PARAM_FILE_EXTENSION,
          description = "The extension for the written files. Default is .EventTime.ctakes.completed.xml",
-         defaultValue = ".EventTime.ctakes.completed.xml",
+         defaultValue = ".NormalizedTimexes.ctakes.completed.xml",
          mandatory = false
    )
    private String _fileExtension;
@@ -256,6 +256,8 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       final SourceData sourceData = SourceMetadataUtil.getOrCreateSourceData( jCas );
       final String docTime = sourceData.getSourceOriginalDate();
       String[] docTimeComponents = docTime.split( "-" );
+
+      System.err.println( docTime );
 
       TimeSpan DCT = TimeSpan.of( Integer.parseInt( docTimeComponents[ 0 ] ),
                                   Integer.parseInt( docTimeComponents[ 1 ] ),

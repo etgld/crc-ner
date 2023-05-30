@@ -4,10 +4,12 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.ctakes.core.pipeline.PipeBitInfo;
 import org.apache.ctakes.core.util.doc.SourceMetadataUtil;
 import org.apache.ctakes.temporal.ae.DocTimeApproximator;
+import org.apache.ctakes.typesystem.type.structured.DocumentPath;
 import org.apache.ctakes.typesystem.type.structured.SourceData;
 import org.apache.log4j.Logger;
 import org.apache.uima.UimaContext;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
+import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.jcas.JCas;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.cleartk.util.ViewUriUtil;
@@ -36,7 +38,9 @@ public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_Im
         // could use some refactoring
         final SourceData sourceData = SourceMetadataUtil.getOrCreateSourceData( jCas );
 
-        String fileName = FilenameUtils.getBaseName( ViewUriUtil.getURI( jCas ).getPath() );
+        DocumentPath documentPath = JCasUtil.select( jCas, DocumentPath.class ).iterator().next();
+
+        String fileName = FilenameUtils.getBaseName( documentPath.getDocumentPath() );
         String[] fileNameElements = fileName.split( "_" );
         if ( fileNameElements.length >= 3 ){
             String[] possibleDate = fileNameElements[ 2 ].split( "-" );
@@ -75,9 +79,10 @@ public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_Im
         }
 
         assert rawDCT.length() == 8; // YYYYMMDD
-        String year = rawDCT.substring( 0, 3 );
-        String month = rawDCT.substring( 4, 5 );
-        String date = rawDCT.substring( 6, 7 );
+        // Sometimes I forget how substring works
+        String year = rawDCT.substring( 0, 4 );
+        String month = rawDCT.substring( 4, 6 );
+        String date = rawDCT.substring( 6, 8 );
 
         String docTime = year + "-" + month + "-" + date;
         sourceData.setSourceOriginalDate( docTime );
