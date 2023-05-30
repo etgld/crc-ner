@@ -50,9 +50,9 @@ public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_Im
                 String docTime = year + "-" + String.format( "%02d", month ) + "-" + String.format( "%02d", day );
 
                 sourceData.setSourceOriginalDate( docTime );
-                LOGGER.info( "DeepPhe Spec Note" + fileName + " Time is Set to " + docTime );
+                LOGGER.info( "DeepPhe Spec Note " + fileName + " Time is Set to " + docTime );
             }
-            LOGGER.info( "DeepPhe Non-Spec Note" + fileName + ": Ensure is UPMC" );
+            LOGGER.info( "DeepPhe Non-Spec Note " + fileName + ": Ensure is UPMC" );
         }
 
         // Otherwise this is a UPMC note
@@ -70,7 +70,7 @@ public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_Im
                 .orElse( "UNK" );
 
         if ( rawDCT.equals( "UNK" ) ){
-            LOGGER.info( "DeepPhe Non-Spec Note" + fileName + ": Could Not Find Principal Date In Header! Resorting to DocTimeApproximator" );
+            LOGGER.error( "DeepPhe Non-Spec Note " + fileName + ": Could Not Find Principal Date In Header! Resorting to DocTimeApproximator" );
             _approximator.process( jCas );
             return;
         }
@@ -83,6 +83,6 @@ public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_Im
 
         String docTime = year + "-" + month + "-" + date;
         sourceData.setSourceOriginalDate( docTime );
-        LOGGER.info( "DeepPhe Non-Spec Note" + fileName + " Time is Set to " + docTime );
+        LOGGER.info( "DeepPhe Non-Spec Note " + fileName + " Time is Set to " + docTime );
     }
 }
