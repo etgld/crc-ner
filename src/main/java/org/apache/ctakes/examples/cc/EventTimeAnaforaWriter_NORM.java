@@ -6,6 +6,7 @@ import org.apache.ctakes.core.util.annotation.IdentifiedAnnotationUtil;
 import org.apache.ctakes.core.util.doc.SourceMetadataUtil;
 import org.apache.ctakes.typesystem.type.refsem.Event;
 import org.apache.ctakes.typesystem.type.refsem.EventProperties;
+import org.apache.ctakes.typesystem.type.refsem.Time;
 import org.apache.ctakes.typesystem.type.structured.SourceData;
 import org.apache.ctakes.typesystem.type.textsem.EventMention;
 import org.apache.ctakes.typesystem.type.textsem.IdentifiedAnnotation;
@@ -257,13 +258,21 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       final String docTime = sourceData.getSourceOriginalDate();
       String[] docTimeComponents = docTime.split( "-" );
 
-      System.err.println( docTime );
+      TimeSpan DCT;
 
-      TimeSpan DCT = TimeSpan.of( Integer.parseInt( docTimeComponents[ 0 ] ),
-                                  Integer.parseInt( docTimeComponents[ 1 ] ),
-                                  Integer.parseInt( docTimeComponents[ 2 ] ) );
-
-
+      // properly generated
+      if ( docTimeComponents.length == 3 ) {
+         DCT = TimeSpan.of(
+                 Integer.parseInt( docTimeComponents[ 0 ] ),
+                 Integer.parseInt( docTimeComponents[ 1 ] ),
+                 Integer.parseInt( docTimeComponents[ 2 ] ) );
+      } else {
+         // DocTimeApproximator generated
+         DCT = TimeSpan.of(
+                 Integer.parseInt( docTime.substring( 0, 4 ) ),
+                 Integer.parseInt( docTime.substring( 4, 6 ) ),
+                 Integer.parseInt( docTime.substring( 6, 8 ) ) );
+      }
 
 
       final List<TimeMention> timeMentions = new ArrayList<>( JCasUtil.select( jCas, TimeMention.class ) );
