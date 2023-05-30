@@ -3,8 +3,10 @@ package org.apache.ctakes.examples.cc;
 import org.apache.ctakes.core.cc.AbstractJCasFileWriter;
 import org.apache.ctakes.core.pipeline.PipeBitInfo;
 import org.apache.ctakes.core.util.annotation.IdentifiedAnnotationUtil;
+import org.apache.ctakes.core.util.doc.SourceMetadataUtil;
 import org.apache.ctakes.typesystem.type.refsem.Event;
 import org.apache.ctakes.typesystem.type.refsem.EventProperties;
+import org.apache.ctakes.typesystem.type.structured.SourceData;
 import org.apache.ctakes.typesystem.type.textsem.EventMention;
 import org.apache.ctakes.typesystem.type.textsem.IdentifiedAnnotation;
 import org.apache.ctakes.typesystem.type.textsem.TimeMention;
@@ -50,7 +52,7 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
    static private final TemporalExpressionParser normalizer = TemporalExpressionParser.en();
 
    // for now give a 'non time'
-   static private final TimeSpan dummyDCT = TimeSpan.of(-999999999, 4, 1);
+   //static private final TimeSpan dummyDCT = TimeSpan.of(, 4, 1);
 
    /**
     * Sometimes you want a file extension that specifies specifics about the corpus, creator and phase.
@@ -251,18 +253,27 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
                                  final int startId,
                                  final Element annotations,
                                  final Document doc ) {
+      final SourceData sourceData = SourceMetadataUtil.getOrCreateSourceData( jCas );
+      final String docTime = sourceData.getSourceOriginalDate();
+      String[] docTimeComponents = docTime.split( "-" );
+
+      TimeSpan DCT = TimeSpan.of( Integer.parseInt( docTimeComponents[ 0 ] ),
+                                  Integer.parseInt( docTimeComponents[ 1 ] ),
+                                  Integer.parseInt( docTimeComponents[ 2 ] ) );
+
       final List<TimeMention> timeMentions = new ArrayList<>( JCasUtil.select( jCas, TimeMention.class ) );
       timeMentions.sort( Comparator.comparingInt( TimeMention::getBegin )
                                     .thenComparingInt( TimeMention::getEnd ) );
       int idNumber = startId;
       for ( TimeMention timeMention : timeMentions ) {
-         annotations.appendChild( createTimeElement( timeMention, documentId, idNumber, doc ) );
+         annotations.appendChild( createTimeElement( timeMention, DCT, documentId, idNumber, doc ) );
          idNumber++;
       }
       return idNumber + 1;
    }
 
    static private Element createTimeElement( final TimeMention timeMention,
+                                             final TimeSpan DCT,
                                              final String documentId,
                                              final int idNumber,
                                              final Document doc ) {
@@ -271,7 +282,7 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       String unnormalizedTimex = timeMention.getCoveredText();
       Temporal normalizedTimex = null;
       try{
-         normalizedTimex = normalizer.parse( unnormalizedTimex, dummyDCT ).get();
+         normalizedTimex = normalizer.parse( unnormalizedTimex, DCT ).get();
       } catch (Exception ignored){}
 
 
@@ -285,10 +296,14 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       }
 
       final String timeClass = timeMention.getTimeClass();
-      if ( timeClass != null && (timeClass.equals( "DOCTIME" ) || timeClass.equals( "SECTIONTIME" ) ) ) {
+      if ( timeClass != null && ( timeClass.equals( "DOCTIME" ) || timeClass.equals( "SECTIONTIME" ) ) ) {
          typeName = timeClass;
+         final Element classE = doc.createElement( "Class" );
+
          // properties.setTextContent( "" );
-         properties.appendChild( normalizedExpression );
+         // properties.appendChild( normalizedExpression );
+         // maybe this does it ?
+         properties.appendChild( DCT.timeMLValue() );
       } else { // inserting and normalizing here
          typeName = "TIMEX3";
          final Element classE = doc.createElement( "Class" );

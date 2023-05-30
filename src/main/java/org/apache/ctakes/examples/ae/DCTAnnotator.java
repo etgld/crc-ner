@@ -73,7 +73,7 @@ public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_Im
             return;
         }
 
-        assert rawDCT.length() == 8; // 20<YY><MM><DD>
+        assert rawDCT.length() == 8; // YYYYMMDD
         String year = rawDCT.substring( 0, 3 );
         String month = rawDCT.substring( 4, 5 );
         String date = rawDCT.substring( 6, 7 );
