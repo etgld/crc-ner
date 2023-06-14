@@ -6,6 +6,7 @@
 000|T121|taxotere
 000|T121|tamoxifen
 000|T121|tc
+000|T121|TC
 000|T121|liposomal doxorubicin
 000|T121|carboplatin
 000|T121|paclitaxel
@@ -23,8 +24,3 @@
 000|T121|doxorubicin
 000|T121|taxol
 000|T121|gemzar
-//000|T079|today
-//000|T079|yesterday
-//000|T079|thursday
-//000|T079|friday
-//000|T079|january
