@@ -10,7 +10,6 @@ add MrsDrSentenceJoiner
 //  Tokenize by penn treebank rules.
 add TokenizerAnnotatorPTB
 
-
 add RuleBasedTimeAnnotator
 
 add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar

@@ -120,7 +120,7 @@ final public class EventTextWriter extends AbstractJCasFileWriter {
         Set<Pair<Integer>> labelToInds = new HashSet<>();
 
         eventMentions.forEach(
-                eventMention -> labelToInds.add(getSpan(eventMention))
+                eventMention -> labelToInds.add( getSpan( eventMention ) )
         );
 
         writer.write(
