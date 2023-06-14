@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.ctakes.core.pipeline.PipeBitInfo.TypeProduct.BASE_TOKEN;
 import static org.apache.ctakes.core.pipeline.PipeBitInfo.TypeProduct.DOCUMENT_ID_PREFIX;
@@ -192,7 +193,7 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       if ( text.length() <= 8 ) {
          return text;
       }
-      return "<" + text.substring( text.length() - 7, text.length() );
+      return "<" + text.substring( text.length() - 7);
    }
 
    static private Element createEventPropertiesElement( final EventMention eventMention,
@@ -220,23 +221,19 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       final Element Permanence = doc.createElement( "Permanence" );
 
       final Collection<UmlsConcept> umlsConcepts = OntologyConceptUtil.getUmlsConcepts( eventMention );
-      if ( !(  umlsConcepts == null || umlsConcepts.isEmpty() ) ){
-         HashSet<String> drugCUIS = new HashSet<>();
 
-         // TODO -  there's likely a better way
-         for ( UmlsConcept umlsConcept : umlsConcepts ){
-            String semanticName = SemanticGroup.getSemanticName( eventMention, umlsConcept );
-            if ( semanticName.equals( "Drug" ) ){
-               drugCUIS.add( trimTo8( umlsConcept.getCui() ) );
-            }
-         }
+      Set<String> drugCUIS = umlsConcepts
+              .stream()
+              // TODO - can't find a better way to do this in SemanticGroup, worth asking about?
+              .filter(  c -> SemanticGroup.getSemanticName( eventMention, c ).equals( "Drug" ) )
+              .map( c -> trimTo8( c.getCui() ) )
+              .collect(Collectors.toSet());
 
-         if ( drugCUIS.size()  > 0 ){
-            final Element cui = doc.createElement("CUI");
-            cui.setTextContent( String.join( ",", drugCUIS ) );
-            properties.appendChild( cui );
-         }
-      }
+      final Element cui = doc.createElement("CUI");
+      cui.setTextContent( drugCUIS.size() > 0 ? String.join( ",", drugCUIS ) : "" );
+      properties.appendChild( cui );
+
+
 
 
 
