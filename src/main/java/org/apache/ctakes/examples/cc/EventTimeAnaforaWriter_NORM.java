@@ -1,15 +1,19 @@
 package org.apache.ctakes.examples.cc;
 
 import org.apache.ctakes.core.cc.AbstractJCasFileWriter;
+import org.apache.ctakes.core.cc.pretty.SemanticGroup;
 import org.apache.ctakes.core.pipeline.PipeBitInfo;
 import org.apache.ctakes.core.util.annotation.IdentifiedAnnotationUtil;
+import org.apache.ctakes.core.util.annotation.OntologyConceptUtil;
 import org.apache.ctakes.core.util.doc.SourceMetadataUtil;
 import org.apache.ctakes.typesystem.type.refsem.Event;
 import org.apache.ctakes.typesystem.type.refsem.EventProperties;
 import org.apache.ctakes.typesystem.type.refsem.Time;
+import org.apache.ctakes.typesystem.type.refsem.UmlsConcept;
 import org.apache.ctakes.typesystem.type.structured.SourceData;
 import org.apache.ctakes.typesystem.type.textsem.EventMention;
 import org.apache.ctakes.typesystem.type.textsem.IdentifiedAnnotation;
+import org.apache.ctakes.typesystem.type.textsem.MedicationMention;
 import org.apache.ctakes.typesystem.type.textsem.TimeMention;
 import org.apache.uima.fit.descriptor.ConfigurationParameter;
 import org.apache.uima.fit.util.JCasUtil;
@@ -30,10 +34,7 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static org.apache.ctakes.core.pipeline.PipeBitInfo.TypeProduct.BASE_TOKEN;
 import static org.apache.ctakes.core.pipeline.PipeBitInfo.TypeProduct.DOCUMENT_ID_PREFIX;
@@ -187,6 +188,13 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       return event;
    }
 
+   static private String trimTo8( final String text ) {
+      if ( text.length() <= 8 ) {
+         return text;
+      }
+      return "<" + text.substring( text.length() - 7, text.length() );
+   }
+
    static private Element createEventPropertiesElement( final EventMention eventMention,
                                                         final Document doc ) {
       final Event event = eventMention.getEvent();
@@ -210,6 +218,28 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       final Element contextAspect = doc.createElement( "ContextualAspect" );
       contextAspect.setTextContent( eventProperties.getContextualAspect() );
       final Element Permanence = doc.createElement( "Permanence" );
+
+      final Collection<UmlsConcept> umlsConcepts = OntologyConceptUtil.getUmlsConcepts( eventMention );
+      if ( !(  umlsConcepts == null || umlsConcepts.isEmpty() ) ){
+         HashSet<String> drugCUIS = new HashSet<>();
+
+         // TODO -  there's likely a better way
+         for ( UmlsConcept umlsConcept : umlsConcepts ){
+            String semanticName = SemanticGroup.getSemanticName( eventMention, umlsConcept );
+            if ( semanticName.equals( "Drug" ) ){
+               drugCUIS.add( trimTo8( umlsConcept.getCui() ) );
+            }
+         }
+
+         if ( drugCUIS.size()  > 0 ){
+            final Element cui = doc.createElement("CUI");
+            cui.setTextContent( String.join( ",", drugCUIS ) );
+            properties.appendChild( cui );
+         }
+      }
+
+
+
       Permanence.setTextContent( "UNDETERMINED" );
       properties.appendChild( docTimeRel );
       properties.appendChild( polarity );
