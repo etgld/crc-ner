@@ -1,5 +1,6 @@
 package org.apache.ctakes.examples.cc;
 
+import gov.nih.nlm.nls.lvg.Util.Str;
 import org.apache.ctakes.core.cc.AbstractJCasFileWriter;
 import org.apache.ctakes.core.cc.pretty.SemanticGroup;
 import org.apache.ctakes.core.pipeline.PipeBitInfo;
@@ -78,10 +79,10 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
     */
    static public final String PARAM_ONLY_TIME_EVENTS = "OnlyTemporalEvents";
    @ConfigurationParameter(
-         name = PARAM_ONLY_TIME_EVENTS,
-         description = "Only use temporal events, not those created by dictionary lookup. Default is yes.",
-         defaultValue = "yes",
-         mandatory = false
+           name = PARAM_ONLY_TIME_EVENTS,
+           description = "Only use temporal events, not those created by dictionary lookup. Default is yes.",
+           defaultValue = "yes",
+           mandatory = false
    )
    private String _onlyTemporalEvents;
 
@@ -187,6 +188,19 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
                                               final Document doc ) {
 
       final Element event = createBaseElement( eventMention, "EVENT", documentId, idNumber, doc );
+
+      // just to make sure
+      Collection<UmlsConcept> umlsConcepts = OntologyConceptUtil.getUmlsConcepts( ( IdentifiedAnnotation ) eventMention );
+
+      Collection<String> drugCUIS = umlsConcepts
+              .stream()
+              // TODO - can't find a better way to do this in SemanticGroup, worth asking about?
+              // .filter(  c -> SemanticGroup.getSemanticName( eventMention, c ).equals( "Drug" ) )
+              .map(UmlsConcept::getCui)//trimTo8( c.getCui() ) )
+              .collect(Collectors.toSet());
+
+      LOGGER.info( "CUIS for " + eventMention.getCoveredText()  + " : " + String.join( ",", drugCUIS ));
+
       event.appendChild( createEventPropertiesElement( eventMention, doc ) );
       return event;
    }
@@ -200,6 +214,17 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
 
    static private Element createEventPropertiesElement( final EventMention eventMention,
                                                         final Document doc ) {
+
+      // just to make sure
+      Collection<UmlsConcept> umlsConcepts = OntologyConceptUtil.getUmlsConcepts( ( IdentifiedAnnotation ) eventMention );
+
+      Collection<String> drugCUIS = umlsConcepts
+              .stream()
+              // TODO - can't find a better way to do this in SemanticGroup, worth asking about?
+              // .filter(  c -> SemanticGroup.getSemanticName( eventMention, c ).equals( "Drug" ) )
+              .map(UmlsConcept::getCui)//trimTo8( c.getCui() ) )
+              .collect(Collectors.toSet());
+
       final Event event = eventMention.getEvent();
       if ( event == null ) {
          return createNullEventProperties( IdentifiedAnnotationUtil.isNegated( eventMention ) , doc );
@@ -222,14 +247,9 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       contextAspect.setTextContent( eventProperties.getContextualAspect() );
       final Element Permanence = doc.createElement( "Permanence" );
 
-      final Collection<UmlsConcept> umlsConcepts = OntologyConceptUtil.getUmlsConcepts( eventMention );
 
-      Set<String> drugCUIS = umlsConcepts
-              .stream()
-              // TODO - can't find a better way to do this in SemanticGroup, worth asking about?
-              .filter(  c -> SemanticGroup.getSemanticName( eventMention, c ).equals( "Drug" ) )
-              .map( c -> trimTo8( c.getCui() ) )
-              .collect(Collectors.toSet());
+
+      //LOGGER.info( "CUIS for " + eventMention.getCoveredText()  + " : " + String.join( ",", drugCUIS ));
 
       final Element cui = doc.createElement("CUI");
       cui.setTextContent( drugCUIS.size() > 0 ? String.join( ",", drugCUIS ) : "" );
@@ -290,7 +310,7 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
 
 
       if ( docTime == null || docTime.isEmpty() ){
-         LOGGER.warn( "Empty DCT, going withou\t" );
+         LOGGER.warn( "Empty DCT, not creating the node" );
       } else {
          String[] docTimeComponents = docTime.split("-");
 
