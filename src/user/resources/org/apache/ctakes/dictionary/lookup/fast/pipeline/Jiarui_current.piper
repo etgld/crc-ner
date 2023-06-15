@@ -2,6 +2,8 @@ set minimumSpan=2
 set exclusionTags=""
 load DefaultFastPipeline
 
+add DCTAnnotator
+
 addDescription EventAnnotator
 
 add EventFilter filterList="resources/org/apache/ctakes/dictionary/lookup/fast/blacklists/filterlist.txt"
@@ -9,3 +11,4 @@ add EventFilter filterList="resources/org/apache/ctakes/dictionary/lookup/fast/b
 add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
 
 add pretty.plaintext.PrettyTextWriterFit SubDirectory=nice_text
+add EventTimeAnaforaWriter_NORM SubDirectory=anafora_xml

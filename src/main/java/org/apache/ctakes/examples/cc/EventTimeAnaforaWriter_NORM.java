@@ -15,6 +15,7 @@ import org.apache.ctakes.typesystem.type.textsem.EventMention;
 import org.apache.ctakes.typesystem.type.textsem.IdentifiedAnnotation;
 import org.apache.ctakes.typesystem.type.textsem.MedicationMention;
 import org.apache.ctakes.typesystem.type.textsem.TimeMention;
+import org.apache.log4j.Logger;
 import org.apache.uima.fit.descriptor.ConfigurationParameter;
 import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.jcas.JCas;
@@ -52,6 +53,7 @@ import static org.apache.ctakes.core.pipeline.PipeBitInfo.TypeProduct.DOCUMENT_I
 )
 final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
 
+   final static private Logger LOGGER = Logger.getLogger( "EventTimeAnaforaWriter_NORM" );
    static private final TemporalExpressionParser normalizer = TemporalExpressionParser.en();
 
    // for now give a 'non time'
@@ -283,22 +285,29 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
                                  final Document doc ) {
       final SourceData sourceData = SourceMetadataUtil.getOrCreateSourceData( jCas );
       final String docTime = sourceData.getSourceOriginalDate();
-      String[] docTimeComponents = docTime.split( "-" );
 
-      TimeSpan DCT;
+      TimeSpan DCT = null;
 
-      // properly generated
-      if ( docTimeComponents.length == 3 ) {
-         DCT = TimeSpan.of(
-                 Integer.parseInt( docTimeComponents[ 0 ] ),
-                 Integer.parseInt( docTimeComponents[ 1 ] ),
-                 Integer.parseInt( docTimeComponents[ 2 ] ) );
+
+      if ( docTime == null || docTime.isEmpty() ){
+         LOGGER.warn( "Empty DCT, going withou\t" );
       } else {
-         // DocTimeApproximator generated
-         DCT = TimeSpan.of(
-                 Integer.parseInt( docTime.substring( 0, 4 ) ),
-                 Integer.parseInt( docTime.substring( 4, 6 ) ),
-                 Integer.parseInt( docTime.substring( 6, 8 ) ) );
+         String[] docTimeComponents = docTime.split("-");
+
+
+         // properly generated
+         if (docTimeComponents.length == 3) {
+            DCT = TimeSpan.of(
+                    Integer.parseInt(docTimeComponents[0]),
+                    Integer.parseInt(docTimeComponents[1]),
+                    Integer.parseInt(docTimeComponents[2]));
+         } else {
+            // DocTimeApproximator generated
+            DCT = TimeSpan.of(
+                    Integer.parseInt(docTime.substring(0, 4)),
+                    Integer.parseInt(docTime.substring(4, 6)),
+                    Integer.parseInt(docTime.substring(6, 8)));
+         }
       }
 
 
@@ -308,8 +317,10 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       int idNumber = startId;
 
       // DOCTIME
-      annotations.appendChild( createDOCTIME( DCT.timeMLValue(), documentId, idNumber, doc ) );
-      idNumber++;
+      if ( DCT != null ) {
+         annotations.appendChild(createDOCTIME(DCT.timeMLValue(), documentId, idNumber, doc));
+         idNumber++;
+      }
 
       for ( TimeMention timeMention : timeMentions ) {
          annotations.appendChild( createTimeElement( timeMention, DCT, documentId, idNumber, doc ) );
