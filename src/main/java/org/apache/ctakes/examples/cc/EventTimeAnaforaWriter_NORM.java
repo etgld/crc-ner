@@ -189,18 +189,6 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
 
       final Element event = createBaseElement( eventMention, "EVENT", documentId, idNumber, doc );
 
-      // just to make sure
-      Collection<UmlsConcept> umlsConcepts = OntologyConceptUtil.getUmlsConcepts( ( IdentifiedAnnotation ) eventMention );
-
-      Collection<String> drugCUIS = umlsConcepts
-              .stream()
-              // TODO - can't find a better way to do this in SemanticGroup, worth asking about?
-              // .filter(  c -> SemanticGroup.getSemanticName( eventMention, c ).equals( "Drug" ) )
-              .map(UmlsConcept::getCui)//trimTo8( c.getCui() ) )
-              .collect(Collectors.toSet());
-
-      LOGGER.info( "CUIS for " + eventMention.getCoveredText()  + " : " + String.join( ",", drugCUIS ));
-
       event.appendChild( createEventPropertiesElement( eventMention, doc ) );
       return event;
    }
@@ -216,18 +204,21 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
                                                         final Document doc ) {
 
       // just to make sure
-      Collection<UmlsConcept> umlsConcepts = OntologyConceptUtil.getUmlsConcepts( ( IdentifiedAnnotation ) eventMention );
+      Collection<UmlsConcept> umlsConcepts = ( eventMention instanceof MedicationMention ) ? OntologyConceptUtil.getUmlsConcepts(  eventMention ) : new HashSet<>();
 
-      Collection<String> drugCUIS = umlsConcepts
+      String drugCUIs = umlsConcepts
               .stream()
-              // TODO - can't find a better way to do this in SemanticGroup, worth asking about?
-              // .filter(  c -> SemanticGroup.getSemanticName( eventMention, c ).equals( "Drug" ) )
-              .map(UmlsConcept::getCui)//trimTo8( c.getCui() ) )
-              .collect(Collectors.toSet());
+              //.map( c -> trimTo8( c.getCui() ) )
+              .map( UmlsConcept::getCui )
+              .distinct()
+              .collect( Collectors.joining( "," ) );
+
+      //LOGGER.info( eventMention.getCoveredText() + " of type " + eventMention.getClass().getSimpleName() + " has CUIs: " + drugCUIs );
 
       final Event event = eventMention.getEvent();
+
       if ( event == null ) {
-         return createNullEventProperties( IdentifiedAnnotationUtil.isNegated( eventMention ) , doc );
+         return createNullEventProperties( IdentifiedAnnotationUtil.isNegated( eventMention ) , doc , drugCUIs );
       }
       final Element properties = doc.createElement( "properties" );
       final EventProperties eventProperties = event.getProperties();
@@ -246,20 +237,10 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       final Element contextAspect = doc.createElement( "ContextualAspect" );
       contextAspect.setTextContent( eventProperties.getContextualAspect() );
       final Element Permanence = doc.createElement( "Permanence" );
-
-
-
-      //LOGGER.info( "CUIS for " + eventMention.getCoveredText()  + " : " + String.join( ",", drugCUIS ));
-
-      final Element cui = doc.createElement("CUI");
-      cui.setTextContent( drugCUIS.size() > 0 ? String.join( ",", drugCUIS ) : "" );
-      properties.appendChild( cui );
-
-
-
-
-
       Permanence.setTextContent( "UNDETERMINED" );
+      final Element cuiElement = doc.createElement("CUI");
+      cuiElement.setTextContent( drugCUIs );
+
       properties.appendChild( docTimeRel );
       properties.appendChild( polarity );
       properties.appendChild( degree );
@@ -267,10 +248,11 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       properties.appendChild( contextMode );
       properties.appendChild( contextAspect );
       properties.appendChild( Permanence );
+      properties.appendChild( cuiElement );
       return properties;
    }
 
-   static private Element createNullEventProperties( final boolean isNegated, final Document doc ) {
+   static private Element createNullEventProperties( final boolean isNegated, final Document doc, final String drugCUIs ) {
       final Element properties = doc.createElement( "properties" );
       Element docTimeRel = doc.createElement( "DocTimeRel" );
       docTimeRel.setTextContent( "Overlap" );
@@ -287,6 +269,9 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       contextAspect.setTextContent( "UNDETERMINED" );
       final Element Permanence = doc.createElement( "Permanence" );
       Permanence.setTextContent( "UNDETERMINED" );
+      final Element cuiElement = doc.createElement("CUI");
+      cuiElement.setTextContent( drugCUIs );
+
       properties.appendChild( docTimeRel );
       properties.appendChild( polarity );
       properties.appendChild( degree );
@@ -294,6 +279,7 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       properties.appendChild( contextMode );
       properties.appendChild( contextAspect );
       properties.appendChild( Permanence );
+      properties.appendChild( cuiElement );
       return properties;
    }
 
