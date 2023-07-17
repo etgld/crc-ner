@@ -6,7 +6,7 @@ add DCTAnnotator
 
 addDescription EventAnnotator
 
-add EventFilter filterList="resources/org/apache/ctakes/dictionary/lookup/fast/blacklists/filterlist.txt"
+//add EventFilter filterList="resources/org/apache/ctakes/dictionary/lookup/fast/blacklists/filterlist.txt"
 
 add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
 
