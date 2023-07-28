@@ -1,0 +1,25 @@
+// One giant section
+add SimpleSegmentAnnotator
+
+//  Detect sentences using a machine learning model.
+addLogged SentenceDetectorAnnotatorBIO classifierJarPath=/org/apache/ctakes/core/models/sentdetect/model.jar
+
+// Joins sentences improperly split at person titles.
+add MrsDrSentenceJoiner
+
+//  Tokenize by penn treebank rules.
+add TokenizerAnnotatorPTB
+
+// Dictionary lookup module
+set minimumSpan=2
+set exclusionTags=""
+load DictionarySubPipe
+
+// 'Generic' Events.  Use addDescription and let the EventAnnotator set itself up with defaults.
+addDescription EventAnnotator
+
+// Times.  Use addLogged to log start and finish of processing.  There aren't default models, so set specifically
+add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
+
+add EventTextWriter SubDirectory=txt
+add pretty.plaintext.PrettyTextWriterFit SubDirectory=text
