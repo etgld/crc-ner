@@ -1,7 +1,12 @@
 import gov.nih.nlm.nls.lvg.Util.In;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.ctakes.chunker.ae.Chunker;
+import org.apache.ctakes.chunker.ae.adjuster.ChunkAdjuster;
+import org.apache.ctakes.contexttokenizer.ae.ContextDependentTokenizerAnnotator;
 import org.apache.ctakes.core.ae.*;
 import org.apache.ctakes.core.pipeline.PipelineBuilder;
+import org.apache.ctakes.dictionary.lookup2.ae.DefaultJCasTermAnnotator;
+import org.apache.ctakes.postagger.POSTagger;
 import org.apache.ctakes.typesystem.type.syntax.BaseToken;
 import org.apache.ctakes.typesystem.type.syntax.NewlineToken;
 import org.apache.ctakes.typesystem.type.textsem.*;
@@ -33,56 +38,44 @@ public class InferencePipeline {
             System.exit(-1);
         }
 
-
-        List<String> splits = Arrays.asList("train", "dev", "test");
-
         File cnlptCorpusDir = makeAndReturnTaskDir(args[1], "");
 
-        for(String partition : splits) {
-            CollectionReader reader = getCollectionReader(new File(args[0], partition.toLowerCase()));
+        CollectionReader reader = getCollectionReader(new File(args[0]));
 
-            PipelineBuilder builder = new PipelineBuilder();
-            // TODO - get list annotator etc working, NB for meds paragraph annotator disappeared some annotations
-            builder.add(UriToDocumentTextAnnotator.class);
-            builder.add(SimpleSegmentAnnotator.class);
-            builder.add(ParagraphAnnotator.class);
-            builder.add(ListAnnotator.class);
+        PipelineBuilder builder = new PipelineBuilder();
+        // These first three replicate the DefaultTokenizerPipeline
+        // in DefaultFastPipeline
 
-            AnalysisEngineDescription sentAnnDesc = SentenceDetectorAnnotatorBIO.getDescription();
-            builder.addDescription( sentAnnDesc );
-            builder.add( MrsDrSentenceJoiner.class );
-            builder.add( ParagraphSentenceFixer.class );
-            builder.add( ListParagraphFixer.class );
-            builder.add( ListSentenceFixer.class );
-            builder.add( EolSentenceFixer.class );
-            builder.add( TokenizerAnnotatorPTB.class );
+        builder.add( SimpleSegmentAnnotator.class );
+        builder.add( SentenceDetector.class );
+        builder.add( TokenizerAnnotatorPTB.class );
 
-            // String[] suffixes = new String[] {".seighe.dave.inprogress.xml", "seighe.seighe.completed.xml"};
+        // adding everything for now since idk what the
+        // timex annotators make use of
 
-            // AnalysisEngineDescription readerDesc = AnaforaXMLReader.getDescription(
-            //         "fw",
-            //         "cg",
-            //         suffixes
-            // );
-            // builder.addDescription(readerDesc);
+        // non-core annotators in DefaultFastPipeline
+        builder.add( ContextDependentTokenizerAnnotator.class );
+        AnalysisEngineDescription posTagger = POSTagger.createAnnotatorDescription();
+        builder.addDescription( posTagger );
 
-            String partitionDir = String.format("%s.tsv", partition.toLowerCase());
+        // from ChunkerSubPipe
+        builder.add( Chunker.class );
+        AnalysisEngineDescription firstAdjuster = ChunkAdjuster.createAnnotatorDescription(new String[]{"NP", "NP"}, 1);
+        AnalysisEngineDescription secondAdjuster = ChunkAdjuster.createAnnotatorDescription(new String[]{"NP", "PP", "NP"}, 2);
+        builder.addDescription( firstAdjuster );
+        builder.addDescription( secondAdjuster );
 
-            PrintWriter cnlptOut = new PrintWriter(
-                    new File(
-                            cnlptCorpusDir,
-                            partitionDir
-                    )
-            );
-            PrintWriter metricsOut = new PrintWriter(
-                    new File(
-                            cnlptCorpusDir,
-                            String.format(
-                                    "%s_metrics.txt",
-                                    partition.toLowerCase()
-                            )
-                    )
-            );
+        // from DictionarySubPipe
+        // TODO get actual lookup path and figure out how to set the UMLS key
+        AnalysisEngineDescription termAnnotator = DefaultJCasTermAnnotator.createAnnotatorDescription("CHANGE_ME_TO_WHEREVER_CHEMO_ONTOLOGY_IS");
+        builder.addDescription( termAnnotator );
+
+        // from AttributeCleartkSubPipe
+
+
+
+        PrintWriter cnlptOut = new PrintWriter( cnlptCorpusDir );
+
             AnalysisEngineDescription builderDesc = builder.getAnalysisEngineDesc();
 
             JCasIterator casIter = new JCasIterator( reader, AnalysisEngineFactory.createEngine( builderDesc ) );
@@ -98,7 +91,7 @@ public class InferencePipeline {
                 int i = 0;
             }
         }
-    }
+
     static File makeAndReturnTaskDir(String baseDir, String taskString){
         File taskDir = new File(baseDir, taskString);
         taskDir.mkdirs();
