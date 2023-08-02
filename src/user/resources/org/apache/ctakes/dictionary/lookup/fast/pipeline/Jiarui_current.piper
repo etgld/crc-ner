@@ -1,5 +1,5 @@
 
-set minimumSpan=2
+//set minimumSpan=2
 set exclusionTags=""
 load DefaultFastPipeline
 
