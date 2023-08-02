@@ -84,8 +84,7 @@ under the License.
         <implementationName>org.apache.ctakes.dictionary.lookup2.consumer.DefaultTermConsumer</implementationName>
         <!--<implementationName>org.apache.ctakes.dictionary.lookup2.consumer.PrecisionTermConsumer</implementationName>-->
         <!--<implementationName>org.apache.ctakes.dictionary.lookup2.consumer.SemanticCleanupTermConsumer</implementationName>-->
-        <properties>
-
+        <properties>s
             <property key="codingScheme" value="custom"/>
         </properties>
     </rareWordConsumer>
