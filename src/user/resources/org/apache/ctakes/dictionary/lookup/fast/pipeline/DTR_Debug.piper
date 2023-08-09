@@ -1,28 +1,12 @@
-// Default Clinical Pipeline with events and times
-// Default Clinical Pipeline
-
 set minimumSpan=2
 set exclusionTags=“”
 
 load DefaultFastPipeline
-// Dictionary lookup module
-
-
-
-//load DictionarySubPipe
-// ‘Generic’ Events.  Use addDescription and let the EventAnnotator set itself up with defaults.
-// addDescription EventAnnotator
-// Added on May 17 to filter out medication events
-
-//add EventFilter filterList=“resources/fake_notes/filterlist.txt”
-// Times.  Use addLogged to log start and finish of processing.  There aren’t default models, so set specifically
 
 add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
-// add DCT here
 add DCTAnnotator
 add DocTimeRelAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/doctimerel/model.jar
 
 add EventTimeAnaforaWriter_NORM SubDirectory=anafora OnlyTemporalEvents=no
-// to anafora format
-// add EventTimeAnaforaWriter SubDirectory=anafora OnlyTemporalEvents=no
+
 add EventTextWriter SubDirectory=txt
