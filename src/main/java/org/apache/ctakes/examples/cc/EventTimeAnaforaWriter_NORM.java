@@ -241,6 +241,9 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       final Element cuiElement = doc.createElement("CUI");
       cuiElement.setTextContent( drugCUIs );
 
+      final Element textLiteralElement = doc.createElement("Text");
+      textLiteralElement.setTextContent( eventMention.getCoveredText() );
+
       properties.appendChild( docTimeRel );
       properties.appendChild( polarity );
       properties.appendChild( degree );
@@ -249,6 +252,7 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       properties.appendChild( contextAspect );
       properties.appendChild( Permanence );
       properties.appendChild( cuiElement );
+      properties.appendChild( textLiteralElement );
       return properties;
    }
 
