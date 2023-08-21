@@ -4,7 +4,9 @@ import org.apache.ctakes.core.pipeline.PipeBitInfo;
 import org.apache.ctakes.core.resource.FileLocator;
 import org.apache.ctakes.typesystem.type.refsem.Event;
 import org.apache.ctakes.typesystem.type.refsem.EventProperties;
+import org.apache.ctakes.typesystem.type.constants.CONST;
 import org.apache.ctakes.typesystem.type.textsem.EventMention;
+import org.apache.ctakes.typesystem.type.textsem.IdentifiedAnnotation;
 import org.apache.log4j.Logger;
 import org.apache.uima.UimaContext;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
@@ -59,11 +61,6 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
     }
 
     private boolean toRemove( EventMention eventMention ){
-        //  TODO filter wrong kinds of uncertainty derived from
-        // the following class during inference, the ContextualModality filtering
-        // is gold only
-        // addDescription UncertaintyCleartkAnalysisEngine
-
 
         // for preserving my own sanity
         // https://winterbe.com/posts/2015/03/15/avoid-null-checks-in-java/
@@ -80,7 +77,13 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
         boolean isHypothetical = contextualModality.equals( "hypothetical" ) || contextualModality.equals( "hedged" ) || contextualModality.equals( "generic" );
         */
 
-        boolean isHypothetical = false;
+
+
+        int certainty = Optional.of( eventMention )
+                .map( IdentifiedAnnotation::getUncertainty )
+                .orElse( CONST.NE_UNCERTAINTY_ABSENT );
+
+        boolean isUncertain = certainty == CONST.NE_UNCERTAINTY_PRESENT;
 
         // this is very very brute force, it behooves us to check
         // how the dictionary lookup works since there are ways for even
@@ -96,7 +99,7 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
                                     .contains(term)
                     );
         }
-        return isFilterMatch || isHypothetical;
+        return isFilterMatch || isUncertain; //isHypothetical;
     }
 
     private Set<String> getTerms() {

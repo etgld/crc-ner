@@ -7,6 +7,7 @@ import org.apache.ctakes.core.pipeline.PipeBitInfo;
 import org.apache.ctakes.core.util.annotation.IdentifiedAnnotationUtil;
 import org.apache.ctakes.core.util.annotation.OntologyConceptUtil;
 import org.apache.ctakes.core.util.doc.SourceMetadataUtil;
+import org.apache.ctakes.typesystem.type.constants.CONST;
 import org.apache.ctakes.typesystem.type.refsem.Event;
 import org.apache.ctakes.typesystem.type.refsem.EventProperties;
 import org.apache.ctakes.typesystem.type.refsem.Time;
@@ -220,6 +221,12 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       if ( event == null ) {
          return createNullEventProperties( IdentifiedAnnotationUtil.isNegated( eventMention ) , doc , drugCUIs );
       }
+
+      int certaintyClass = Optional.of( eventMention )
+              .map( IdentifiedAnnotation::getUncertainty )
+              .orElse( -1 );
+
+
       final Element properties = doc.createElement( "properties" );
       final EventProperties eventProperties = event.getProperties();
       Element docTimeRel = doc.createElement( "DocTimeRel" );
@@ -232,6 +239,9 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       final Element polarity = doc.createElement( "Polarity" );
       final String polarityValue = IdentifiedAnnotationUtil.isNegated( eventMention ) ? "NEG" : "POS";
       polarity.setTextContent( polarityValue );
+
+
+
       final Element contextMode = doc.createElement( "ContextualModality" );
       contextMode.setTextContent( eventProperties.getContextualModality() );
       final Element contextAspect = doc.createElement( "ContextualAspect" );
@@ -253,6 +263,12 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
       properties.appendChild( Permanence );
       properties.appendChild( cuiElement );
       properties.appendChild( textLiteralElement );
+      if ( certaintyClass > -1 ) {
+         String certaintyString = certaintyClass == CONST.NE_UNCERTAINTY_ABSENT ? "certain" : "uncertain";
+         final Element certaintyElem = doc.createElement( "Certainty" );
+         certaintyElem.setTextContent( certaintyString );
+         properties.appendChild( certaintyElem )
+      }
       return properties;
    }
 
