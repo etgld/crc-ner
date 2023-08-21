@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -33,7 +34,8 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
 
     @ConfigurationParameter(
             name = PARAM_FILTER_LIST,
-            description = "The way we store files for processing.  Aligned pair of directories "
+            description = "The way we store files for processing.  Aligned pair of directories ",
+            mandatory = false
     )
     private String filterList;
 
@@ -46,22 +48,36 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
     }
 
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
+        JCasUtil.select( jCas, EventMention.class )
+                .stream()
+                .filter( this::toRemove )
+                .forEach( EventMention::removeFromIndexes );
+    }
+
+    private boolean toRemove( EventMention eventMention ){
+        // there should be an easier way to do this as well
+        boolean isHypothetical = eventMention
+                .getEvent()
+                .getProperties()
+                .getContextualModality()
+                .toLowerCase()
+                .trim()
+                .equals( "hypothetical" );
+
         // this is very very brute force, it behooves us to check
         // how the dictionary lookup works since there are ways for even
         // fuzzy matching to be more efficient than this but for
         // low demand and small exclusion lists it's not _too_ much of a trade off
-        JCasUtil.select( jCas, EventMention.class )
+        boolean isFilterMatch = terms
                 .stream()
-                .filter(
-                        eventMention -> terms
-                                .stream()
-                                .anyMatch(
-                                        term -> eventMention
-                                                .getCoveredText()
-                                                .toLowerCase()
-                                                .contains( term )
-                                )
-                ).forEach( EventMention::removeFromIndexes );
+                .anyMatch(
+                        term -> eventMention
+                                .getCoveredText()
+                                .toLowerCase()
+                                .contains( term )
+                );
+
+        return isFilterMatch || isHypothetical;
     }
 
     private Set<String> getTerms() {
@@ -79,7 +95,9 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
                 throw new RuntimeException( e );
             }
         } else {
-            throw new RuntimeException( "Missing Filter List" );
+            //throw new RuntimeException( "Missing Filter List" );
+            LOGGER.info( "Missing Filter List, Using Empty List" );
+            return new HashSet<>();
         }
     }
 }
