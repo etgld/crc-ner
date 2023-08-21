@@ -7,6 +7,10 @@ add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/
 add DCTAnnotator
 add DocTimeRelAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/doctimerel/model.jar
 
+// TODO
+// add uncertainty cleartk windowed AE
+// add context annotator with the relevant parameters ( window size etc )
+
 add EventFilter
 
 add EventTimeAnaforaWriter_NORM SubDirectory=anafora OnlyTemporalEvents=no

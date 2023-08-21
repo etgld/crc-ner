@@ -53,6 +53,7 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
         JCasUtil.select( jCas, EventMention.class )
                 .stream()
+                // TODO filter by meds / TUI T121
                 .filter( this::toRemove )
                 .forEach( EventMention::removeFromIndexes );
     }
