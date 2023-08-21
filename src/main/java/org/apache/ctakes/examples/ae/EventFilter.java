@@ -2,6 +2,8 @@ package org.apache.ctakes.examples.ae;
 
 import org.apache.ctakes.core.pipeline.PipeBitInfo;
 import org.apache.ctakes.core.resource.FileLocator;
+import org.apache.ctakes.typesystem.type.refsem.Event;
+import org.apache.ctakes.typesystem.type.refsem.EventProperties;
 import org.apache.ctakes.typesystem.type.textsem.EventMention;
 import org.apache.log4j.Logger;
 import org.apache.uima.UimaContext;
@@ -17,6 +19,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -55,28 +58,34 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
     }
 
     private boolean toRemove( EventMention eventMention ){
-        // there should be an easier way to do this as well
-        boolean isHypothetical = eventMention
-                .getEvent()
-                .getProperties()
-                .getContextualModality()
-                .toLowerCase()
+
+        // for preserving my own sanity
+        // https://winterbe.com/posts/2015/03/15/avoid-null-checks-in-java/
+
+        String contextualModality = Optional.of( eventMention )
+                .map( EventMention::getEvent )
+                .map( Event::getProperties )
+                .map( EventProperties::getContextualModality )
+                .orElse( "" )
                 .trim()
-                .equals( "hypothetical" );
+                .toLowerCase();
+
+        boolean isHypothetical = contextualModality.equals( "hypothetical" );
 
         // this is very very brute force, it behooves us to check
         // how the dictionary lookup works since there are ways for even
         // fuzzy matching to be more efficient than this but for
         // low demand and small exclusion lists it's not _too_ much of a trade off
-        boolean isFilterMatch = terms
-                .stream()
-                .anyMatch(
-                        term -> eventMention
-                                .getCoveredText()
-                                .toLowerCase()
-                                .contains( term )
-                );
-
+        boolean isFilterMatch = false;
+        if ( !this.terms.isEmpty() ) {
+            isFilterMatch = this.terms.stream()
+                    .anyMatch(
+                            term -> eventMention
+                                    .getCoveredText()
+                                    .toLowerCase()
+                                    .contains(term)
+                    );
+        }
         return isFilterMatch || isHypothetical;
     }
 
