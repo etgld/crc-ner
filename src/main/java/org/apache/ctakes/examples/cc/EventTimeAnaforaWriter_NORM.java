@@ -267,7 +267,7 @@ final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
          String certaintyString = certaintyClass == CONST.NE_UNCERTAINTY_ABSENT ? "certain" : "uncertain";
          final Element certaintyElem = doc.createElement( "Certainty" );
          certaintyElem.setTextContent( certaintyString );
-         properties.appendChild( certaintyElem )
+         properties.appendChild( certaintyElem );
       }
       return properties;
    }
