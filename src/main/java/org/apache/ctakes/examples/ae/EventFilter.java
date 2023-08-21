@@ -58,10 +58,16 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
     }
 
     private boolean toRemove( EventMention eventMention ){
+        //  TODO filter wrong kinds of uncertainty derived from
+        // the following class during inference, the ContextualModality filtering
+        // is gold only
+        // addDescription UncertaintyCleartkAnalysisEngine
+
 
         // for preserving my own sanity
         // https://winterbe.com/posts/2015/03/15/avoid-null-checks-in-java/
 
+        /*
         String contextualModality = Optional.of( eventMention )
                 .map( EventMention::getEvent )
                 .map( Event::getProperties )
@@ -70,7 +76,10 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
                 .trim()
                 .toLowerCase();
 
-        boolean isHypothetical = contextualModality.equals( "hypothetical" );
+        boolean isHypothetical = contextualModality.equals( "hypothetical" ) || contextualModality.equals( "hedged" ) || contextualModality.equals( "generic" );
+        */
+
+        boolean isHypothetical = false;
 
         // this is very very brute force, it behooves us to check
         // how the dictionary lookup works since there are ways for even
