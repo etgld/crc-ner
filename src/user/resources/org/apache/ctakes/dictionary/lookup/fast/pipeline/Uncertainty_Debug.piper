@@ -12,7 +12,7 @@ addDescription UncertaintyCleartkAnalysisEngineWindowed
 set MaxRightScopeSize=12
 load NeContextsSubPipe
 
-add EventFilter
+//add EventFilter
 
 add EventTimeAnaforaWriter_NORM SubDirectory=anafora OnlyTemporalEvents=no
 
