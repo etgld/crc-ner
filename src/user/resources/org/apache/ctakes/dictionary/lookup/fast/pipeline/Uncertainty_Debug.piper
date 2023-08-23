@@ -7,13 +7,15 @@ add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/
 add DCTAnnotator
 add DocTimeRelAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/doctimerel/model.jar
 
-addDescription UncertaintyCleartkAnalysisEngineWindowed
+//addDescription EventAnnotator
+//addDescription UncertaintyCleartkAnalysisEngineWindowed
+//addDescription UncertaintyCleartkAnalysisEngine
 
-set MaxRightScopeSize=12
+// set MaxRightScopeSize=12
 load NeContextsSubPipe
 
 //add EventFilter
 
 add EventTimeAnaforaWriter_NORM SubDirectory=anafora OnlyTemporalEvents=no
 
-add EventTextWriter SubDirectory=txt
+//add EventTextWriter SubDirectory=txt
