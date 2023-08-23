@@ -13,7 +13,7 @@ add DocTimeRelAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/doc
 
 // set MaxRightScopeSize=12
 load NeContextsSubPipe
-
+add DiseaseAttributeFinder
 //add EventFilter
 
 add EventTimeAnaforaWriter_NORM SubDirectory=anafora OnlyTemporalEvents=no
