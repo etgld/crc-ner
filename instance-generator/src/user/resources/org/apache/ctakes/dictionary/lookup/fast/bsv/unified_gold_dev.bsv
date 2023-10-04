@@ -1,0 +1,101 @@
+000|T121|alpha-2b interferon
+000|T121|chemotherapies
+000|T121|alibercept
+000|T121|aflibercept
+000|T121|afiblercept
+000|T121|ipilimumab
+000|T121|alflibercept
+000|T121|interferon
+000|T121|aflibercept
+000|T121|interleukin
+000|T121|alpha interferon
+000|T121|interferon, alpha 2b
+000|T121|interleukin-2
+000|T121|interleukin 2
+000|T121|alpha 2b interferon
+000|T121|adrucil
+000|T121|xelox
+000|T121|panitumumab
+000|T121|cpt-11
+000|T121|chemort
+000|T121|radiochemotherapy
+000|T121|taxane
+000|T121|eloxatin
+000|T121|5fu
+000|T121|5-fu
+000|T121|chemotherapeutic
+000|T121|folfox
+000|T121|cytotaxin
+000|T121|exemestane
+000|T121|5-fluorouracil
+000|T121|methotrexate
+000|T121|fluorouracil
+000|T121|folfox6
+000|T121|arimidex
+000|T121|folfiri
+000|T121|fluorouracil
+000|T121|regorafenib
+000|T121|bev
+000|T121|ac
+000|T121|cetuximab
+000|T121|4fu
+000|T121|capecitabine
+000|T121|mitomycin-c
+000|T121|folfox-6
+000|T121|fluoropyrimidine
+000|T121|anthracycline
+000|T121|aromasin
+000|T121|vectibix
+000|T121|5f-u
+000|T121|bevacizumab
+000|T121|tc
+000|T121|folfox therapy
+000|T121|avastin
+000|T121|erbitux
+000|T121|oxaliplatin
+000|T121|chemo-radiation
+000|T121|capeox
+000|T121|chemoirradiation
+000|T121|anastrazole
+000|T121|mitomycin
+000|T121|folfox7
+000|T121|xeloda
+000|T121|leucovorin
+000|T121|mitomycin c
+000|T121|irinotecan
+000|T121|chemoradiotherapy
+000|T121|oxalplatin
+000|T121|femara
+000|T121|chemoradiation
+000|T121|folfox 6
+000|T121|caboplatin
+000|T121|doxil
+000|T121|carbo
+000|T121|gemzar
+000|T121|chmeo
+000|T121|paclitaxel
+000|T121|chemotherapy
+000|T121|taxol
+000|T121|liposomal doxorubicin
+000|T121|carboplatin
+000|T121|gemcitabine
+000|T121|cisplatin
+000|T121|etoposide
+000|T121|t/c
+000|T121|topotecan
+000|T121|avastin
+000|T121|platinum
+000|T121|paraplatin
+000|T121|chemotherapy's
+000|T121|taxo
+000|T121|tamoxifen
+000|T121|anastrozole
+000|T121|chemotherapy
+000|T121|taxol
+000|T121|arimidex
+000|T121|carboplatin
+000|T121|cytoxan
+000|T121|adriamycin
+000|T121|abraxane
+000|T121|herceptin
+000|T121|taxotere

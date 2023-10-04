@@ -1,0 +1,12 @@
+add SimpleSegmentAnnotator
+
+add TxTimelinesGoldSentencer
+
+add TokenizerAnnotatorPTB
+
+
+load DictionarySubPipe
+
+add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
+
+add PairwiseOut SubDirectory=pairwise_out

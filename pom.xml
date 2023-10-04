@@ -9,46 +9,26 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>crc-ner</artifactId>
+    <artifactId>txtimelines-lookup</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>timenorm</module>
+        <module>instance-generator</module>
+    </modules>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ctakes</groupId>
-            <artifactId>ctakes-dictionary-lookup-fast</artifactId>
+            <artifactId>ctakes-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.ctakes</groupId>
-            <artifactId>ctakes-assertion</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.ctakes</groupId>
-            <artifactId>ctakes-ne-contexts</artifactId>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.4</version>
         </dependency>
         <dependency>
             <groupId>org.apache.ctakes</groupId>
             <artifactId>ctakes-temporal</artifactId>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.clulab/timenorm -->
-        <dependency>
-            <groupId>org.clulab</groupId>
-            <artifactId>timenorm_2.13</artifactId>
-            <version>1.0.5</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.clulab.timenorm.scate</groupId>
-                    <artifactId>timenorm_2.13</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/org.scala-lang/scala-library -->
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-            <version>2.13.10</version>
         </dependency>
         <dependency>
             <groupId>org.apache.ctakes</groupId>
@@ -60,31 +40,25 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>com.codepoetics</groupId>
+            <artifactId>protonpack</artifactId>
+            <version>1.16</version>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>2.13.10</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
+                <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
-                    <archive>
-                        <manifest>
-                            <mainClass>org.apache.ctakes.core.pipeline.PiperFileRunner</mainClass>
-                        </manifest>
-                    </archive>
+                    <!-- put your configurations here -->
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>make-assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

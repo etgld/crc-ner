@@ -1,9 +1,0 @@
-set minimumSpan=2
-set exclusionTags=""
-load DefaultFastPipeline
-
-//addDescription EventAnnotator
-//add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
-
-add pretty.plaintext.PrettyTextWriterFit SubDirectory=nice_text
-//add EventTimeAnaforaWriter_NORM OnlyTemporalEvents=no SubDirectory=anafora_xml
