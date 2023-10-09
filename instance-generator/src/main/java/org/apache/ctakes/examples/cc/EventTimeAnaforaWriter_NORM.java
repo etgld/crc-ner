@@ -21,7 +21,6 @@ import org.apache.log4j.Logger;
 import org.apache.uima.fit.descriptor.ConfigurationParameter;
 import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.jcas.JCas;
-import org.clulab.timenorm.scfg.*;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
