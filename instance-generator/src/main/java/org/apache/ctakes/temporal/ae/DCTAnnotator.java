@@ -1,9 +1,8 @@
-package org.apache.ctakes.examples.ae;
+package org.apache.ctakes.temporal.ae;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.ctakes.core.pipeline.PipeBitInfo;
 import org.apache.ctakes.core.util.doc.SourceMetadataUtil;
-import org.apache.ctakes.temporal.ae.DocTimeApproximator;
 import org.apache.ctakes.typesystem.type.structured.DocumentPath;
 import org.apache.ctakes.typesystem.type.structured.SourceData;
 import org.apache.log4j.Logger;

@@ -1,4 +1,4 @@
-package org.apache.ctakes.examples.cc;
+package org.apache.ctakes.temporal.cc;
 
 import org.apache.ctakes.core.cc.AbstractJCasFileWriter;
 import org.apache.ctakes.core.pipeline.PipeBitInfo;
@@ -373,9 +373,9 @@ final public class NormalizedEventTimeAnaforaWriter extends AbstractJCasFileWrit
 
       final Element normalizedExpression = doc.createElement( "normalizedExpression" );
       if ( normalizedTimex != null ){
-         System.err.println( unnormalizedTimex );
          normalizedExpression.setTextContent( normalizedTimex.timeMLValue() );
       } else {
+         System.err.println("Resorting to unnormalized timex: " + unnormalizedTimex );
          normalizedExpression.setTextContent( "" );
       }
 
