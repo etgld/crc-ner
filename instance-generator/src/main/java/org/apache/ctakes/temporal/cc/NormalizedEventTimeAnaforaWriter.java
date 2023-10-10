@@ -376,7 +376,7 @@ final public class NormalizedEventTimeAnaforaWriter extends AbstractJCasFileWrit
          normalizedExpression.setTextContent( normalizedTimex.timeMLValue() );
       } else {
          System.err.println("Resorting to unnormalized timex: " + unnormalizedTimex );
-         normalizedExpression.setTextContent( "" );
+         normalizedExpression.setTextContent( unnormalizedTimex );
       }
 
       final String timeClass = timeMention.getTimeClass();
