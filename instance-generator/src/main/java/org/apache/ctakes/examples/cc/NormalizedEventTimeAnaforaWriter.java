@@ -1,8 +1,6 @@
 package org.apache.ctakes.examples.cc;
 
-import gov.nih.nlm.nls.lvg.Util.Str;
 import org.apache.ctakes.core.cc.AbstractJCasFileWriter;
-import org.apache.ctakes.core.cc.pretty.SemanticGroup;
 import org.apache.ctakes.core.pipeline.PipeBitInfo;
 import org.apache.ctakes.core.util.annotation.IdentifiedAnnotationUtil;
 import org.apache.ctakes.core.util.annotation.OntologyConceptUtil;
@@ -10,7 +8,6 @@ import org.apache.ctakes.core.util.doc.SourceMetadataUtil;
 import org.apache.ctakes.typesystem.type.constants.CONST;
 import org.apache.ctakes.typesystem.type.refsem.Event;
 import org.apache.ctakes.typesystem.type.refsem.EventProperties;
-import org.apache.ctakes.typesystem.type.refsem.Time;
 import org.apache.ctakes.typesystem.type.refsem.UmlsConcept;
 import org.apache.ctakes.typesystem.type.structured.SourceData;
 import org.apache.ctakes.typesystem.type.textsem.EventMention;
@@ -55,7 +52,7 @@ import static org.apache.ctakes.core.pipeline.PipeBitInfo.TypeProduct.DOCUMENT_I
       role = PipeBitInfo.Role.WRITER,
       usables = { DOCUMENT_ID_PREFIX, BASE_TOKEN }
 )
-final public class EventTimeAnaforaWriter_NORM extends AbstractJCasFileWriter {
+final public class NormalizedEventTimeAnaforaWriter extends AbstractJCasFileWriter {
 
    final static private Logger LOGGER = Logger.getLogger( "EventTimeAnaforaWriter_NORM" );
    static private final TemporalExpressionParser normalizer = TemporalExpressionParser.en();

@@ -7,4 +7,4 @@ add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/
 add DCTAnnotator
 add DocTimeRelAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/doctimerel/model.jar
 
-add EventTimeAnaforaWriter_NORM SubDirectory=anafora OnlyTemporalEvents=no
+add NormalizedEventTimeAnaforaWriter SubDirectory=anafora OnlyTemporalEvents=no
