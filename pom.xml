@@ -2,19 +2,21 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>ctakes</artifactId>
-        <groupId>org.apache.ctakes</groupId>
-        <version>5.0.0-SNAPSHOT</version>
-    </parent>
+
+    <groupId>org.healthnlp</groupId>
+    <version>5.0.0-SNAPSHOT</version>
     <modelVersion>4.0.0</modelVersion>
 
-    <properties>
-        <scala.version>2.12.8</scala.version>
-    </properties>
+
 
     <artifactId>txtimelines-lookup</artifactId>
     <packaging>pom</packaging>
+    <properties>
+        <scala.version>2.12.8</scala.version>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <ctakes.version>5.0.0-SNAPSHOT</ctakes.version>
+    </properties>
     <modules>
         <module>tweaked-timenorm</module>
         <module>instance-generator</module>
@@ -28,7 +30,8 @@
         </dependency>
         <dependency>
             <groupId>org.apache.ctakes</groupId>
-            <artifactId>ctakes-core</artifactId>
+            <artifactId>ctakes-core</artifactId>4
+            <version>${ctakes.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -38,6 +41,7 @@
         <dependency>
             <groupId>org.apache.ctakes</groupId>
             <artifactId>ctakes-temporal</artifactId>
+            <version>${ctakes.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.ctakes</groupId>
@@ -48,6 +52,7 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
+            <version>${ctakes.version}</version>
         </dependency>
     </dependencies>
     <build>
