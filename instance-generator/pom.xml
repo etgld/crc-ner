@@ -11,8 +11,8 @@
 
   <artifactId>instance-generator</artifactId>
 
+  <packaging>jar</packaging>
   <properties>
-    <scala.version>2.12.8</scala.version>
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
     <ctakes.version>5.0.0-SNAPSHOT</ctakes.version>
@@ -39,9 +39,9 @@
 
     </dependency>
     <dependency>
-      <groupId>org.clulab</groupId>
+      <groupId>org.healthnlp</groupId>
       <artifactId>tweaked-timenorm</artifactId>
-      <version>1.0.5</version>
+      <version>${project.parent.version}</version>
     </dependency>
 
   </dependencies>
