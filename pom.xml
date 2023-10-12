@@ -70,50 +70,6 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <version>3.1.0</version>
-        <executions>
-          <execution>
-            <!--	Copy resources that should be user-editable for testing without requiring recompiling.  -->
-            <!--	This makes it much easier for developers to find resources. -->
-            <!--	Permanent edits must still be made in src/main/resources -->
-            <id>copy-user-resources</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>copy-resources</goal>
-            </goals>
-            <configuration>
-              <resources>
-                <resource>
-                  <directory>src/user/resources</directory>
-                </resource>
-              </resources>
-              <outputDirectory>${project.basedir}/resources</outputDirectory>
-            </configuration>
-	        </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.5.0</version>
-        <executions>
-          <execution>
-            <id>unpack-ctakes-resources</id>
-            <!--                     Default phase is process-sources -->
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.apache.ctakes</includeGroupIds>
-              <includeArtifactIds>ctakes-user-resources</includeArtifactIds>
-		          <outputDirectory>${project.basedir}/resources</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <descriptorRefs>
