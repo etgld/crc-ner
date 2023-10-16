@@ -23,7 +23,12 @@
       <groupId>org.apache.ctakes</groupId>
       <artifactId>ctakes-dictionary-lookup-fast</artifactId>
       <version>${ctakes.version}</version>
+    </dependency>
 
+    <dependency>
+      <groupId>org.apache.ctakes</groupId>
+      <artifactId>ctakes-pbj</artifactId>
+      <version>${ctakes.version}</version>
     </dependency>
 
     <dependency>
