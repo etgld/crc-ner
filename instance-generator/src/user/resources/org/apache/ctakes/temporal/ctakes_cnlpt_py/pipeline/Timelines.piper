@@ -3,6 +3,10 @@ package org.apache.ctakes.temporal.ae
 package org.apache.ctakes.temporal.util
 
 set SetJavaHome=no
+
+set minimumSpan=2
+set exclusionTags=“”
+
 cli DTRModelPath=d
 cli ModalityModelPath=m
 cli TlinkModelPath=t
@@ -15,15 +19,13 @@ set TimelinesSecondStep=ctakes_cnlpt.timelines_pipeline
 
 add PythonRunner Command="-m $TimelineSecondStep JavaToPy --dtr_model_path $DTRModelDir --modality_model_path $ModalityModelPath --TlinkModelPath $TlinkModelPath PyToJava -o $OutputDirectory"
 
-// tokenization etc
-add SimpleSegmentAnnotator
-add ParagraphAnnotator
-add ParagraphSentencer
-add TokenizerAnnotatorPTB
+load DefaultFastPipeline
+
+add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
+add DCTAnnotator
 
 add PbjJmsSender SendQueue=JavaToPy SendStop=yes
 
-// Get cas from Artemis.
 add PbjReceiverAE ReceiveQueue=PyToJava
 
 add Summarizer
