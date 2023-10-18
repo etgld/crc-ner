@@ -16,6 +16,13 @@ class DocTimeRelDelegator(cas_annotator.CasAnnotator):
     def __init__(self, cas):
         self.event_creator = EventCreator(cas)
         self.event_mention_type = cas.typesystem.get_type(ctakes_types.EventMention)
+        self.model_path = None
+
+    def declare_params(self, arg_parser):
+        arg_parser.add_arg("dtr_model_path")
+
+    def init_params(self, args):
+        self.model_path = args.dtr_model_path
 
     # Initializes cNLPT, which loads its DocTimeRel model.
     def initialize(self):

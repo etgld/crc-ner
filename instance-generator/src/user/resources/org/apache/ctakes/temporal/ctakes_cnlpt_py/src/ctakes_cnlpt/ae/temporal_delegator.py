@@ -20,8 +20,15 @@ class TemporalDelegator(cas_annotator.CasAnnotator):
         self.timex_type = cas.typesystem.get_type(ctakes_types.TimeMention)
         self.tlink_type = cas.typesystem.get_type(ctakes_types.TemporalTextRelation)
         self.argument_type = cas.typesystem.get_type(ctakes_types.RelationArgument)
+        self.model_path = None
 
-    # Initializes cNLPT, which loads its Temporal model.
+    def declare_params(self, arg_parser):
+        arg_parser.add_arg("tlink_model_path")
+
+    def init_params(self, args):
+        self.model_path = args.tlink_model_path
+
+# Initializes cNLPT, which loads its Temporal model.
     def initialize(self):
         print(time.ctime((time.time())), "Initializing cnlp-transformers temporal ...")
         asyncio.run(self.init_caller())

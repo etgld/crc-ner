@@ -30,6 +30,14 @@ def a_sort_by(a):
 
 
 class ConmodDelegator(cas_annotator.CasAnnotator):
+    def __init__(self):
+        self.model_path = None
+
+    def declare_params(self, arg_parser):
+        arg_parser.add_arg("conmod_model_path")
+
+    def init_params(self, args):
+        self.model_path = args.conmod_model_path
 
     # Initializes the cNLPT, which loads its Negation model.
     def initialize(self):
