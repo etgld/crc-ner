@@ -1,8 +1,8 @@
 import asyncio
 import time
 
-import cnlpt.api.dtr_rest as dtr_rest
-from cnlpt.api.cnlp_rest import EntityDocument
+from .dtr_rest import startup_event, process
+from .cnlp_rest import EntityDocument
 from ctakes_pbj.component import cas_annotator
 from ctakes_pbj.pbj_tools.event_creator import EventCreator
 from ctakes_pbj.pbj_tools.helper_functions import *
@@ -39,14 +39,14 @@ class DocTimeRelDelegator(cas_annotator.CasAnnotator):
         print(time.ctime((time.time())), "cnlp-transformers doctimerel Done.")
 
     async def init_caller(self):
-        await dtr_rest.startup_event()
+        await startup_event()
 
     async def dtr_caller(self, cas, event_mentions, offsets):
         text = cas.sofa_string
         e_doc = EntityDocument(doc_text=text, annotations=offsets)
 
         #async with sem:
-        dtr_output = await dtr_rest.process(e_doc)
+        dtr_output = await process(e_doc)
         i = 0
         for e in event_mentions:
             event = self.event_creator.create_event(cas, dtr_output.statuses[i])
