@@ -39,7 +39,10 @@ public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_Im
         String fileName = FilenameUtils.getBaseName( documentPath.getDocumentPath() );
         String[] fileNameElements = fileName.split( "_" );
         if ( fileNameElements.length >= 3 ){
-            String[] possibleDate = fileNameElements[ 2 ].split( "-" );
+
+            String[] possibleDate =
+                fileNameElements[2].split("-");
+
             if ( possibleDate.length == 3 ){
 
                 int month = Integer.parseInt( possibleDate[ 0 ] );
@@ -50,8 +53,9 @@ public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_Im
 
                 sourceData.setSourceOriginalDate( docTime );
                 LOGGER.info( "DeepPhe Spec Note " + fileName + " Time is Set to " + docTime );
+                return;
             }
-            LOGGER.info( "DeepPhe Non-Spec Note " + fileName + ": Ensure is UPMC" );
+            LOGGER.info( "DeepPhe Non-Spec Note " + fileName + ": Ensure is UPMC " );
         }
 
         // Otherwise this is a UPMC note
