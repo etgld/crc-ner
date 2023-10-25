@@ -22,7 +22,7 @@ import numpy as np
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from .cnlp_rest import (
+from src.user.resources.org.apache.ctakes.timelines_py.src.timelines.ae.cnlp_rest import (
     EntityDocument,
     create_instance_string,
     get_dataset,

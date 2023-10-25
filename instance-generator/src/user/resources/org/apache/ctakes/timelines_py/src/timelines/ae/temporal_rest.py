@@ -18,7 +18,7 @@
 import logging
 import os
 from time import time
-from typing import Dict, List, Tuple, Union
+from typing import List, Union
 
 import numpy as np
 from fastapi import FastAPI
@@ -26,8 +26,7 @@ from nltk.tokenize import wordpunct_tokenize as tokenize
 from pydantic import BaseModel
 from seqeval.metrics.sequence_labeling import get_entities
 
-from cnlpt.CnlpModelForClassification import CnlpConfig, CnlpModelForClassification
-from .cnlp_rest import create_instance_string, get_dataset, initialize_cnlpt_model
+from src.user.resources.org.apache.ctakes.timelines_py.src.timelines.ae.cnlp_rest import create_instance_string, get_dataset, initialize_cnlpt_model
 
 app = FastAPI()
 model_name = "mlml-chip/thyme2_colon_e2e"
