@@ -77,25 +77,6 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.5.0</version>
-        <executions>
-          <execution>
-            <id>unpack-ctakes-resources</id>
-            <!--                     Default phase is process-sources -->
-            <goals>
-              <goal>unpack-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.apache.ctakes</includeGroupIds>
-              <includeArtifactIds>ctakes-user-resources</includeArtifactIds>
-              <outputDirectory>${project.basedir}/resources</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 </project>

@@ -10,6 +10,7 @@
   <artifactId>txtimelines-lookup</artifactId>
   <packaging>pom</packaging>
   <properties>
+    <!--The Scala version is not the latest on purpose I'm afraid-->
     <scala.version>2.12.8</scala.version>
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
@@ -88,6 +89,25 @@
             <goals>
               <goal>single</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>unpack-ctakes-resources</id>
+            <!--                     Default phase is process-sources -->
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.apache.ctakes</includeGroupIds>
+              <includeArtifactIds>ctakes-user-resources</includeArtifactIds>
+              <outputDirectory>${project.basedir}/resources</outputDirectory>
+            </configuration>
           </execution>
         </executions>
       </plugin>
