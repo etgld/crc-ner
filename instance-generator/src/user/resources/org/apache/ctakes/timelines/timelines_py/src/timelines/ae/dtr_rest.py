@@ -22,13 +22,13 @@ import numpy as np
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from src.user.resources.org.apache.ctakes.timelines_py.src.timelines.ae.cnlp_rest import (
+from src.user.resources.org.apache.ctakes.timelines.timelines_py.src.timelines.ae.cnlp_rest import (
     EntityDocument,
     create_instance_string,
     get_dataset,
     initialize_cnlpt_model,
 )
-from .temporal_rest import dtr_label_list, old_dtr_label_list
+from .temporal_rest import old_dtr_label_list
 
 app = FastAPI()
 model_name = "tmills/tiny-dtr"
