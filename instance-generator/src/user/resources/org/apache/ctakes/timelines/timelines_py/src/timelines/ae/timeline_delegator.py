@@ -45,23 +45,36 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
     # Process Sentences, adding Times, Events and TLinks found by cNLPT.
     def process(self, cas):
-        print(time.ctime((time.time())), "Processing cnlp-transformers temporal ...")
+        print(time.ctime((time.time())), "Processing cnlp-transformers timelines ...")
         sentences = cas.select(ctakes_types.Sentence)
         event_mentions = cas.select(ctakes_types.EventMention)
-        sentence_events = get_covered_list(sentences, event_mentions)
+
+        def is_positive(event_mention):
+            return event_mention.Event.properties.polarity == 1
+
+        def is_actual(event_mention):
+            return event_mention.Event.properties.contextualModality == "ACTUAL"
+
+        positive_sentence_events = [[*filter(is_positive, sent_events)] for sent_events in get_covered_list(sentences, event_mentions)]
 
         tokens = cas.select(ctakes_types.BaseToken)
         sentence_tokens = get_covered_list(sentences, tokens)
 
         i = 0
         while i < len(sentences):
-            if len(sentence_events[i]) > 0:
-                print(time.ctime((time.time())), "Processing cnlp-transformers temporal on sentence",
+            if len(positive_sentence_events[i]) > 0:
+                print(time.ctime((time.time())), "Processing cnlp-transformers timelines on sentence",
                       str(i), "of", str(len(sentences)), "...")
-                event_offsets = get_windowed_offsets(sentence_events[i], sentences[i].begin)
+                event_offsets = get_windowed_offsets(positive_sentence_events[i], sentences[i].begin)
                 token_offsets = get_windowed_offsets(sentence_tokens[i], sentences[i].begin)
                 asyncio.run(self.temporal_caller(cas, sentences[i], sentence_events[i], token_offsets))
             i += 1
+
+        for index, packet in enumerate(zip(sentences, positive_sentence_events)):
+            sentence, events = packet
+            if len(events) > 0:
+                pass
+
         print(time.ctime((time.time())), "cnlp-transformers temporal Done.")
 
     async def init_caller(self):
@@ -77,8 +90,8 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
     async def temporal_caller(self, cas, sentence, event_mentions, token_offsets):
 
-        sentence_doc = temporal_rest.SentenceDocument(sentence.get_covered_text())
-        temporal_result = await temporal_rest.process_sentence(sentence_doc)
+        sentence_doc = tlink_rest.SentenceDocument(sentence.get_covered_text())
+        temporal_result = await tlink_rest.process_sentence(sentence_doc)
 
         events_times = {}
         i = 0
