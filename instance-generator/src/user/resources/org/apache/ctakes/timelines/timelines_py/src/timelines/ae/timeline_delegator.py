@@ -1,7 +1,9 @@
 import asyncio
 import time
 
-import PROTOTYPE_REST_BACKEND as temporal_rest
+import tlink_rest
+import dtr_rest
+import conmod_rest
 from ctakes_pbj.component import cas_annotator
 from ctakes_pbj.pbj_tools import create_type
 from ctakes_pbj.pbj_tools.create_relation import create_relation
@@ -14,22 +16,21 @@ from ctakes_pbj.type_system import ctakes_types
 sem = asyncio.Semaphore(1)
 
 
-class TemporalDelegator(cas_annotator.CasAnnotator):
+class TimelineDelegator(cas_annotator.CasAnnotator):
 
     def __init__(self, cas):
         self.event_mention_type = cas.typesystem.get_type(ctakes_types.EventMention)
         self.timex_type = cas.typesystem.get_type(ctakes_types.TimeMention)
         self.tlink_type = cas.typesystem.get_type(ctakes_types.TemporalTextRelation)
         self.argument_type = cas.typesystem.get_type(ctakes_types.RelationArgument)
-        self.dtr_model_path = None
-        self.tlink_model_path = None
-        self.mod_model_path = None
+        self.dtr_path = None
+        self.tlink_path = None
+        self.conmod_path = None
 
     def init_params(self, args):
-        self.dtr_model_path = args.dtr_model_path
-        self.tlink_model_path = args.tlink_model_path
-        self.mod_model_path = args.mod_model_path
-
+        self.dtr_path = args.dtr_path
+        self.tlink_path = args.tlink_path
+        self.conmod_path = args.conmod_path
 
     # Initializes cNLPT, which loads its Temporal model.
     def initialize(self):
@@ -40,8 +41,7 @@ class TemporalDelegator(cas_annotator.CasAnnotator):
     def declare_params(self, arg_parser):
         arg_parser.add_arg("dtr_path")
         arg_parser.add_arg("tlink_path")
-        arg_parser.add_arg("mod_path")
-
+        arg_parser.add_arg("conmod_path")
 
     # Process Sentences, adding Times, Events and TLinks found by cNLPT.
     def process(self, cas):
@@ -60,18 +60,22 @@ class TemporalDelegator(cas_annotator.CasAnnotator):
                       str(i), "of", str(len(sentences)), "...")
                 event_offsets = get_windowed_offsets(sentence_events[i], sentences[i].begin)
                 token_offsets = get_windowed_offsets(sentence_tokens[i], sentences[i].begin)
-                asyncio.run(self.temporal_caller(cas, sentences[i], sentence_events[i], event_offsets, token_offsets))
+                asyncio.run(self.temporal_caller(cas, sentences[i], sentence_events[i], token_offsets))
             i += 1
         print(time.ctime((time.time())), "cnlp-transformers temporal Done.")
 
     async def init_caller(self):
-        await temporal_rest.startup_event(
-            dtr_path=self.dtr_model_path,
-            tlink_path=self.tlink_model_path,
-            mod_path=self.mod_model_path,
+        await tlink_rest.startup_event(
+            tlink_path=self.tlink_path,
+        )
+        await dtr_rest.startup_event(
+            dtr_path=self.dtr_path
+        )
+        await conmod_rest.startup_event(
+            conmod_path=self.conmod_path
         )
 
-    async def temporal_caller(self, cas, sentence, event_mentions, event_offsets, token_offsets):
+    async def temporal_caller(self, cas, sentence, event_mentions, token_offsets):
 
         sentence_doc = temporal_rest.SentenceDocument(sentence.get_covered_text())
         temporal_result = await temporal_rest.process_sentence(sentence_doc)

@@ -2,12 +2,17 @@
 isort:skip_file
 """
 # Core python imports
-import os
 
-# FastAPI imports
-from pydantic import BaseModel
+import logging
 from typing import List
 
+import torch
+# intra-library imports
+from cnlpt.CnlpModelForClassification import CnlpModelForClassification, CnlpConfig
+from cnlpt.cnlp_data import cnlp_preprocess_data
+from datasets import Dataset
+# FastAPI imports
+from pydantic import BaseModel
 # Modeling imports
 from transformers import (
     AutoConfig,
@@ -17,14 +22,6 @@ from transformers import (
     Trainer,
     TrainingArguments,
 )
-from datasets import Dataset
-import torch
-import logging
-
-# intra-library imports
-from cnlpt.CnlpModelForClassification import CnlpModelForClassification, CnlpConfig
-from cnlpt.HierarchicalTransformer import HierarchicalModel
-from cnlpt.cnlp_data import cnlp_preprocess_data
 
 
 class UnannotatedDocument(BaseModel):
@@ -41,13 +38,13 @@ class EntityDocument(BaseModel):
 
 
 def get_dataset(
-    inst_list,
-    tokenizer,
-    max_length: int = 128,
-    hier: bool = False,
-    chunk_len: int = 200,
-    num_chunks: int = 40,
-    insert_empty_chunk_at_beginning: bool = False,
+        inst_list,
+        tokenizer,
+        max_length: int = 128,
+        hier: bool = False,
+        chunk_len: int = 200,
+        num_chunks: int = 40,
+        insert_empty_chunk_at_beginning: bool = False,
 ):
     dataset = Dataset.from_dict({"text": inst_list})
     task_dataset = dataset.map(
@@ -75,16 +72,16 @@ def create_instance_string(doc_text: str, offsets: List[int]):
     start = max(0, offsets[0] - 100)
     end = min(len(doc_text), offsets[1] + 100)
     raw_str = (
-        doc_text[start : offsets[0]]
-        + " <e> "
-        + doc_text[offsets[0] : offsets[1]]
-        + " </e> "
-        + doc_text[offsets[1] : end]
+            doc_text[start: offsets[0]]
+            + " <e> "
+            + doc_text[offsets[0]: offsets[1]]
+            + " </e> "
+            + doc_text[offsets[1]: end]
     )
     return raw_str.replace("\n", " ")
 
 
-def initialize_cnlpt_model(app, model_name, cuda=True, batch_size=8):
+def initialize_model(app, model_name, cuda=True, batch_size=8, mode="cnlpt"):
     args = [
         "--output_dir",
         "save_run/",
@@ -99,15 +96,17 @@ def initialize_cnlpt_model(app, model_name, cuda=True, batch_size=8):
 
     app.state.training_args = training_args
 
-    AutoConfig.register("cnlpt", CnlpConfig)
-    AutoModel.register(CnlpConfig, CnlpModelForClassification)
+    if mode == "cnlpt":
+        AutoConfig.register("cnlpt", CnlpConfig)
+        AutoModel.register(CnlpConfig, CnlpModelForClassification)
 
     config = AutoConfig.from_pretrained(model_name)
     app.state.config = config
     app.state.tokenizer = AutoTokenizer.from_pretrained(model_name, config=config)
+    # can probably squash to one step but being safe
     model = CnlpModelForClassification.from_pretrained(
-        model_name, cache_dir=os.getenv("HF_CACHE"), config=config
-    )
+        model_name, config=config
+    ) if mode == "cnlpt" else AutoModel.from_pretrained(model_name, config=config)
     if cuda and not torch.cuda.is_available():
         logging.warning(
             "CUDA is set to True (probably a default) but was not available; setting to False and proceeding. If you have a GPU you need to debug why pytorch cannot see it."
@@ -125,30 +124,3 @@ def initialize_cnlpt_model(app, model_name, cuda=True, batch_size=8):
         args=app.state.training_args,
         compute_metrics=None,
     )
-
-
-def initialize_hier_model(app, model_name, cuda=True, batch_size=1):
-    AutoConfig.register("cnlpt", CnlpConfig)
-    AutoModel.register(CnlpConfig, HierarchicalModel)
-
-    config: CnlpConfig = AutoConfig.from_pretrained(model_name)
-    app.state.config = config
-    app.state.tokenizer = AutoTokenizer.from_pretrained(model_name, config=config)
-
-    model = AutoModel.from_pretrained(
-        model_name, cache_dir=os.getenv("HF_CACHE"), config=config
-    )
-    model.train(False)
-
-    if cuda and not torch.cuda.is_available():
-        logging.warning(
-            "CUDA is set to True (probably a default) but was not available; setting to False and proceeding. If you have a GPU you need to debug why pytorch cannot see it."
-        )
-        cuda = False
-
-    if cuda:
-        model = model.to("cuda")
-    else:
-        model = model.to("cpu")
-
-    app.state.model = model
