@@ -38,6 +38,9 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         self.dtr_path = None
         self.tlink_path = None
         self.conmod_path = None
+        # TODO - create data structures we can store here
+        # rather than have to put everything back in the CAS
+        # if necessary
 
     def init_params(self, args):
         self.dtr_path = args.dtr_path
@@ -56,7 +59,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         arg_parser.add_arg("conmod_path")
 
     # Process Sentences, adding Times, Events and TLinks found by cNLPT.
-    def process(self, cas : Cas):
+    def process(self, cas: Cas):
         print(time.ctime((time.time())), "Processing cnlp-transformers timelines ...")
         sentences = cas.select(ctakes_types.Sentence)
         event_mentions = cas.select(ctakes_types.EventMention)
@@ -185,3 +188,8 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         if i == -1:
             return create_type.add_type(cas, self.event_mention_type, begin, end)
         return event_mentions[i]
+
+    # Called once at the end of the pipeline.
+    def collection_process_complete(self):
+        # TODO - summarization code here
+        pass
