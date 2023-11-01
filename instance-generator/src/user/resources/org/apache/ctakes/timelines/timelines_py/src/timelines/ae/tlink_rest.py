@@ -21,7 +21,6 @@ from typing import List, Union
 
 import numpy as np
 from fastapi import FastAPI
-from nltk.tokenize import wordpunct_tokenize as tokenize
 from pydantic import BaseModel
 from seqeval.metrics.sequence_labeling import get_entities
 
@@ -30,7 +29,6 @@ from .cnlp_rest import get_dataset, initialize_model
 app = FastAPI()
 logger = logging.getLogger("Tlink Processor")
 logger.setLevel(logging.INFO)
-
 labels = ["-1", "1"]
 timex_label_list = [
     "O",
@@ -71,15 +69,17 @@ relation_label_dict = {val: ind for ind, val in enumerate(relation_label_list)}
 labels = [timex_label_list, event_label_list, relation_label_list]
 max_length = 128
 
+def tokenize(sentence):
+    return [*filter(None, sentence.split())]
 
 class SentenceDocument(BaseModel):
     sentence: str
 
 
 class TokenizedSentenceDocument(BaseModel):
-    """sent_tokens: a list of sentences, where each sentence is a list of tokens"""
+    """tokenized_sentences: a list of sentences, where each sentence is a list of tokens"""
 
-    sent_tokens: List[List[str]]
+    tokenized_sentences: List[List[str]]
     metadata: str
 
 
@@ -167,20 +167,18 @@ async def process(doc: TokenizedSentenceDocument):
     return process_tokenized_sentence_document(doc)
 
 
-@app.post("/tlink/process_sentence")
-async def process_sentence(doc: SentenceDocument):
-    tokenized_sent = tokenize(doc.sentence)
+@app.post("/tlink/process_sentences")
+async def process_sentences(docs: List[SentenceDocument]):
+    tokenized_sentences = [tokenize(doc.sentence) for doc in docs]
     tokenized_doc = TokenizedSentenceDocument(
-        sent_tokens=[
-            tokenized_sent,
-        ],
-        metadata="Single sentence",
+        tokenized_sentences=tokenized_sentences,
+        metadata="multiple sentences",
     )
     return process_tokenized_sentence_document(tokenized_doc)
 
 
 def process_tokenized_sentence_document(doc: TokenizedSentenceDocument):
-    sents = doc.sent_tokens
+    sents = doc.tokenized_sentences
     metadata = doc.metadata
 
     logger.info(f"Received document labeled {metadata} with {len(sents)} sentences")
@@ -192,6 +190,8 @@ def process_tokenized_sentence_document(doc: TokenizedSentenceDocument):
         logger.info(f"Instance string is {inst_str}")
         instances.append(inst_str)
 
+    # TODO - inherit all the relevant dataset arguments from the
+    # overall configuration from the model and tokenizer ( notionally stored in app.state )
     dataset = get_dataset(instances, app.state.tokenizer, max_length)
     preproc_end = time()
 

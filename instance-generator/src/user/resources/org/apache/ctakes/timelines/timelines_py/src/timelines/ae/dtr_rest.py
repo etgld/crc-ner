@@ -69,6 +69,8 @@ async def process(doc: EntityDocument):
         logger.info(f"Instance string is {inst_str}")
         instances.append(inst_str)
 
+    # TODO - inherit all the relevant dataset arguments from the
+    # overall configuration from the model and tokenizer ( notionally stored in app.state )
     dataset = get_dataset(instances, app.state.tokenizer, max_length=max_length)
 
     preproc_end = time()

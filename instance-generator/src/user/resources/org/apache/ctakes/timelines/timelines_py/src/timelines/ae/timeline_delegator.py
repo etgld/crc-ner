@@ -10,6 +10,21 @@ from ctakes_pbj.pbj_tools.create_relation import create_relation
 from ctakes_pbj.pbj_tools.event_creator import EventCreator
 from ctakes_pbj.pbj_tools.helper_functions import get_covered_list
 from ctakes_pbj.type_system import ctakes_types
+from typing import List
+
+from cassis.typesystem import (
+    FEATURE_BASE_NAME_HEAD,
+    TYPE_NAME_FS_ARRAY,
+    TYPE_NAME_FS_LIST,
+    TYPE_NAME_SOFA,
+    FeatureStructure,
+    Type,
+    TypeCheckError,
+    TypeSystem,
+    TypeSystemMode,
+)
+
+from cassis.cas import Cas
 
 sem = asyncio.Semaphore(1)
 
@@ -41,7 +56,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         arg_parser.add_arg("conmod_path")
 
     # Process Sentences, adding Times, Events and TLinks found by cNLPT.
-    def process(self, cas):
+    def process(self, cas : Cas):
         print(time.ctime((time.time())), "Processing cnlp-transformers timelines ...")
         sentences = cas.select(ctakes_types.Sentence)
         event_mentions = cas.select(ctakes_types.EventMention)
@@ -98,9 +113,15 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         await dtr_rest.startup_event(dtr_path=self.dtr_path)
         await conmod_rest.startup_event(conmod_path=self.conmod_path)
 
-    async def temporal_caller(self, cas, sentence, event_mentions, token_offsets):
-        sentence_doc = tlink_rest.SentenceDocument(sentence=sentence.get_covered_text())
-        temporal_result = await tlink_rest.process_sentence(sentence_doc)
+    async def temporal_caller(
+            self,
+            cas : Cas,
+            sentences : List[str],
+            event_mentions : List[List[FeatureStructure]],
+            token_offsets : List[List[List[int]]]
+    ):
+        sentence_docs = [tlink_rest.SentenceDocument(sentence=sentence.get_covered_text()) for sentence in sentences]
+        temporal_result = await tlink_rest.process_sentences(sentence_docs)
 
         events_times = {}
         event_creator = EventCreator(cas)
