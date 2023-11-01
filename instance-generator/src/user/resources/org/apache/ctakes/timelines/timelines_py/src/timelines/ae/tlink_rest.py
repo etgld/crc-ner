@@ -176,6 +176,17 @@ async def process_sentences(docs: List[SentenceDocument]):
     )
     return process_tokenized_sentence_document(tokenized_doc)
 
+def create_tlink_instance_string(doc_text: str, event_offsets : List[int], timex_offsets: List[int]):
+    start = max(0, event_offsets[0] - 100)
+    end = min(len(doc_text), event_offsets[1] + 100)
+    raw_str = (
+            doc_text[start: event_offsets[0]]
+            + " <e> "
+            + doc_text[event_offsets[0]: event_offsets[1]]
+            + " </e> "
+            + doc_text[event_offsets[1]: end]
+    )
+    return raw_str.replace("\n", " ")
 
 def process_tokenized_sentence_document(doc: TokenizedSentenceDocument):
     sents = doc.tokenized_sentences
@@ -186,7 +197,7 @@ def process_tokenized_sentence_document(doc: TokenizedSentenceDocument):
     start_time = time()
 
     for sent_ind, token_list in enumerate(sents):
-        inst_str = create_instance_string(token_list)
+        inst_str = create_tlink_instance_string(token_list, [], [])
         logger.info(f"Instance string is {inst_str}")
         instances.append(inst_str)
 

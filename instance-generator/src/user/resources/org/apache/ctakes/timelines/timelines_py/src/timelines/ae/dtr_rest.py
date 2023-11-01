@@ -24,7 +24,7 @@ from pydantic import BaseModel
 
 from .cnlp_rest import (
     EntityDocument,
-    create_instance_string,
+    create_event_instance_string,
     get_dataset,
     initialize_model,
 )
@@ -65,7 +65,7 @@ async def process(doc: EntityDocument):
 
     for ent_ind, offsets in enumerate(doc.entities):
         logger.info(f"Entity ind: {ent_ind} has offsets ({offsets[0]}, {offsets[1]})")
-        inst_str = create_instance_string(doc_text, offsets)
+        inst_str = create_event_instance_string(doc_text, offsets)
         logger.info(f"Instance string is {inst_str}")
         instances.append(inst_str)
 
