@@ -68,7 +68,7 @@ def get_dataset(
     return task_dataset
 
 
-def create_entity_instance_string(doc_text: str, offsets: List[int]):
+def create_event_instance_string(doc_text: str, offsets: List[int]):
     start = max(0, offsets[0] - 100)
     end = min(len(doc_text), offsets[1] + 100)
     raw_str = (
