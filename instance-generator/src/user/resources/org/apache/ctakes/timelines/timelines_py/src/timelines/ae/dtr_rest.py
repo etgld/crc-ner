@@ -54,7 +54,7 @@ async def startup_event(dtr_path):
 @app.post("/dtr/process")
 async def process(doc: EntityDocument):
     doc_text = doc.doc_text
-    logger.warning(
+    logger.info(
         f"Received document of len {len(doc_text)} to process with {len(doc.entities)} entities"
     )
     instances = []
@@ -64,9 +64,9 @@ async def process(doc: EntityDocument):
         return DocTimeRelResults(statuses=[])
 
     for ent_ind, offsets in enumerate(doc.entities):
-        # logger.debug('Entity ind: %d has offsets (%d, %d)' % (ent_ind, offsets[0], offsets[1]))
+        logger.info(f"Entity ind: {ent_ind} has offsets ({offsets[0]}, {offsets[1]})")
         inst_str = create_instance_string(doc_text, offsets)
-        logger.debug(f"Instance string is {inst_str}")
+        logger.info(f"Instance string is {inst_str}")
         instances.append(inst_str)
 
     dataset = get_dataset(instances, app.state.tokenizer, max_length=max_length)

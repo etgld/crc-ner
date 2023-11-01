@@ -16,9 +16,8 @@
 # under the License.
 
 import logging
-import os
 from time import time
-from typing import Dict, List, Tuple, Union
+from typing import List, Union
 
 import numpy as np
 from fastapi import FastAPI
@@ -171,32 +170,26 @@ async def process(doc: TokenizedSentenceDocument):
 @app.post("/tlink/process_sentence")
 async def process_sentence(doc: SentenceDocument):
     tokenized_sent = tokenize(doc.sentence)
-    doc = TokenizedSentenceDocument(
+    tokenized_doc = TokenizedSentenceDocument(
         sent_tokens=[
             tokenized_sent,
         ],
         metadata="Single sentence",
     )
-    return process_tokenized_sentence_document(doc)
+    return process_tokenized_sentence_document(tokenized_doc)
 
 
 def process_tokenized_sentence_document(doc: TokenizedSentenceDocument):
     sents = doc.sent_tokens
     metadata = doc.metadata
 
-    print(event_label_list)
-    print(timex_label_list)
-    print(relation_label_list)
-
-    logger.warning(
-        f"Received document labeled {metadata} with {len(sents)} sentences"
-    )
+    logger.info(f"Received document labeled {metadata} with {len(sents)} sentences")
     instances = []
     start_time = time()
 
     for sent_ind, token_list in enumerate(sents):
         inst_str = create_instance_string(token_list)
-        logger.debug(f"Instance string is {inst_str}")
+        logger.info(f"Instance string is {inst_str}")
         instances.append(inst_str)
 
     dataset = get_dataset(instances, app.state.tokenizer, max_length)
