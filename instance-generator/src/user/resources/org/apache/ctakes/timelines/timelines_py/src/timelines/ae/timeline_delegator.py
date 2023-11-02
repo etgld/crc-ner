@@ -13,15 +13,15 @@ from ctakes_pbj.type_system import ctakes_types
 from typing import List
 
 from cassis.typesystem import (
-    FEATURE_BASE_NAME_HEAD,
-    TYPE_NAME_FS_ARRAY,
-    TYPE_NAME_FS_LIST,
-    TYPE_NAME_SOFA,
+    # FEATURE_BASE_NAME_HEAD,
+    # TYPE_NAME_FS_ARRAY,
+    # TYPE_NAME_FS_LIST,
+    # TYPE_NAME_SOFA,
     FeatureStructure,
-    Type,
-    TypeCheckError,
-    TypeSystem,
-    TypeSystemMode,
+    # Type,
+    # TypeCheckError,
+    # TypeSystem,
+    # TypeSystemMode,
 )
 
 from cassis.cas import Cas
