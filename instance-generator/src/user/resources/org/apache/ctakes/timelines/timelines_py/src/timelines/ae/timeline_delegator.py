@@ -11,7 +11,6 @@ from ctakes_pbj.pbj_tools.event_creator import EventCreator
 from ctakes_pbj.pbj_tools.helper_functions import get_covered_list
 from ctakes_pbj.type_system import ctakes_types
 from typing import List
-
 from cassis.typesystem import (
     # FEATURE_BASE_NAME_HEAD,
     # TYPE_NAME_FS_ARRAY,
@@ -27,6 +26,34 @@ from cassis.typesystem import (
 from cassis.cas import Cas
 
 sem = asyncio.Semaphore(1)
+
+
+# not sure how to do type signatures for this
+# since FeatureStructures don't have `begin`
+def _ctakes_tokenize(cas, sentence):
+    return sorted(cas.select_covered(ctakes_types.BaseToken, sentence), key=lambda t: t.begin)
+
+
+def _ctakes_clean(cas, sentence):
+    base_tokens = []
+    token_map = []
+    newline_tokens = cas.select_covered(ctakes_types.NewlineToken, sentence)
+    newline_token_indices = {(item.begin, item.end) for item in newline_tokens}
+
+    for base_token in _ctakes_tokenize(cas, sentence):
+        if (
+                (base_token.begin, base_token.end)
+                not in newline_token_indices
+                # and base_token.get_covered_text()
+                # and not base_token.get_covered_text().isspace()
+        ):
+            base_tokens.append(base_token.get_covered_text())
+            token_map.append((base_token.begin, base_token.end))
+        else:
+            # since these indices are tracked as well in the RT code
+            base_tokens.append("<cr>")
+            token_map.append((base_token.begin, base_token.end))
+    return " ".join(base_tokens), token_map
 
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
@@ -118,10 +145,10 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
     async def temporal_caller(
             self,
-            cas : Cas,
-            sentences : List[str],
-            event_mentions : List[List[FeatureStructure]],
-            token_offsets : List[List[List[int]]]
+            cas: Cas,
+            sentences: List[str],
+            event_mentions: List[List[FeatureStructure]],
+            token_offsets: List[List[List[int]]]
     ):
         sentence_docs = [tlink_rest.SentenceDocument(sentence=sentence.get_covered_text()) for sentence in sentences]
         temporal_result = await tlink_rest.process_sentences(sentence_docs)
