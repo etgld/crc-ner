@@ -1,9 +1,6 @@
-import asyncio
 import time
+import logging
 
-import tlink_rest
-import dtr_rest
-import conmod_rest
 from transformers import pipeline
 from ctakes_pbj.component import cas_annotator
 from ctakes_pbj.pbj_tools import create_type
@@ -11,7 +8,7 @@ from ctakes_pbj.pbj_tools.create_relation import create_relation
 from ctakes_pbj.pbj_tools.event_creator import EventCreator
 from ctakes_pbj.pbj_tools.helper_functions import get_covered_list
 from ctakes_pbj.type_system import ctakes_types
-from typing import List
+from typing import List, Tuple, Dict
 from cassis.typesystem import (
     # FEATURE_BASE_NAME_HEAD,
     # TYPE_NAME_FS_ARRAY,
@@ -26,6 +23,47 @@ from cassis.typesystem import (
 
 from cassis.cas import Cas
 
+logger = logging.getLogger(__name__)
+
+def tokens_and_map(cas: Cas) -> Tuple[List[str], List[Tuple[int, int]]]:
+    base_tokens = []
+    token_map = []
+    newline_tokens = cas.select(NewlineToken)
+    newline_token_indices = {(item.begin, item.end) for item in newline_tokens}
+
+    for base_token in sorted(cas.select(BaseToken), key=lambda t: t.begin):
+        if (
+            (base_token.begin, base_token.end)
+            not in newline_token_indices
+            # and base_token.get_covered_text()
+            # and not base_token.get_covered_text().isspace()
+        ):
+            base_tokens.append(base_token.get_covered_text())
+            token_map.append((base_token.begin, base_token.end))
+        else:
+            # since these indices are tracked as well in the timelines code presumably
+            base_tokens.append("<cr>")
+            token_map.append((base_token.begin, base_token.end))
+    return base_tokens, token_map
+
+
+def invert_map(token_map: List[Tuple[int, int]]) -> Dict[int, int]:
+    inverse_map = {}
+    for token_index, token_boundaries in enumerate(token_map):
+        for boundary in token_boundaries:
+            if boundary in inverse_map.keys():
+                logger.warn(f"pre-existing entry {inverse_map[boundary]} in reverse token map")
+            inverse_map[boundary] = token_index
+    return inverse_map
+
+def get_conmod_instance(mention, cas) -> str:
+    pass
+
+def get_tlink_instance(mention, cas, tokens) -> str:
+    pass
+
+def get_dtr_instance(mention, cas, tokens) -> str:
+    pass
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
     def __init__(self, cas):
@@ -65,8 +103,9 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
     # Process Sentences, adding Times, Events and TLinks found by cNLPT.
     def process(self, cas: Cas):
-        pass
-
+        base_tokens, token_map = tokens_and_map(cas)
+        events = cas.select(self.event_mention_type)
+        
     # Called once at the end of the pipeline.
     def collection_process_complete(self):
         # TODO - summarization code here
