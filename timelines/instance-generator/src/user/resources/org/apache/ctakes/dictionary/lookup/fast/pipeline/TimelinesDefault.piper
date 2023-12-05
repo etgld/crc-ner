@@ -1,0 +1,10 @@
+set minimumSpan=2
+set exclusionTags=“”
+
+load DefaultFastPipeline
+
+add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
+add DCTAnnotator
+add DocTimeRelAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/doctimerel/model.jar
+
+add NormalizedEventTimeAnaforaWriter SubDirectory=anafora OnlyTemporalEvents=no
