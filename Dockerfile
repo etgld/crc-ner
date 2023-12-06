@@ -57,6 +57,17 @@ WORKDIR /usr/src/app/timelines
 RUN mvn clean package
 
 # Execute the parser jar
-CMD ["java", "-cp", "target/timelines-lookup-5.0.0-SNAPSHOT-jar-with-dependencies.jar", "org.apache.ctakes.core.pipeline.PiperFileRunner", "-p", "org/apache/ctakes/timelines/pipeline/Timelines", "-i", "/usr/src/app/input", "-o", "/usr/src/app/output", "-a", "/usr/src/app/mybroker", "-v", "/usr/bin/python", "-m", "/usr/src/app/rt_models"]
+CMD ["java", "-cp", \
+"target/timelines-lookup-5.0.0-SNAPSHOT-jar-with-dependencies.jar", \
+"org.apache.ctakes.core.pipeline.PiperFileRunner", \
+"-p", "org/apache/ctakes/timelines/pipeline/Timelines", \
+"-i", "/usr/src/app/input", \
+"-o", "/usr/src/app/output", \
+"-a", "/usr/src/app/mybroker", \
+"-v", "/usr/bin/python", \
+"-dtr_path", "/usr/src/app/dtr", \
+"-tlink_path", "/usr/src/app/tlink", \
+"-conmod_path", "/usr/src/app/conmod"
+]
 
 

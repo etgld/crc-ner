@@ -28,10 +28,10 @@ logger = logging.getLogger(__name__)
 def tokens_and_map(cas: Cas) -> Tuple[List[str], List[Tuple[int, int]]]:
     base_tokens = []
     token_map = []
-    newline_tokens = cas.select(NewlineToken)
+    newline_tokens = cas.select(ctakes_types.NewlineToken)
     newline_token_indices = {(item.begin, item.end) for item in newline_tokens}
 
-    for base_token in sorted(cas.select(BaseToken), key=lambda t: t.begin):
+    for base_token in sorted(cas.select(ctakes_types.BaseToken), key=lambda t: t.begin):
         if (
             (base_token.begin, base_token.end)
             not in newline_token_indices
@@ -59,10 +59,10 @@ def invert_map(token_map: List[Tuple[int, int]]) -> Dict[int, int]:
 def get_conmod_instance(mention, cas) -> str:
     pass
 
-def get_tlink_instance(mention, cas, tokens) -> str:
+def get_tlink_instance(mention, cas, tokens, token_map) -> str:
     pass
 
-def get_dtr_instance(mention, cas, tokens) -> str:
+def get_dtr_instance(mention, cas, tokens, token_map) -> str:
     pass
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
@@ -77,6 +77,11 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         self.dtr_classifier = None
         self.tlink_classifier = None
         self.conmod_classifier = None
+        # TODO - we need to figure out if
+        # how to represent patients, cancer types, etc
+        # by which organize the result, for now just assume
+        # everything in the input folder is the same patient
+        self.raw_events = None
 
     def init_params(self, args):
         self._dtr_path = args.dtr_path
@@ -96,6 +101,8 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             "text-classification", model=self._conmod_path, tokenizer=self._conmod_path
         )
 
+        self.raw_events = []
+
     def declare_params(self, arg_parser):
         arg_parser.add_arg("dtr_path")
         arg_parser.add_arg("tlink_path")
@@ -103,10 +110,38 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
     # Process Sentences, adding Times, Events and TLinks found by cNLPT.
     def process(self, cas: Cas):
+        # TODO - will need CUI-based filtering later but for now assume everything is a chemo mention
+        self.write_chemo_mentions(cas, cas.select(self.event_mention_type))
+
+    def write_chemo_mentions(self, cas: Cas, chemo_mentions):
+        # base_tokens, token_map = tokens_and_map(cas)
+
+        # dtr_instances = (get_dtr_instance(chemo, cas, base_tokens, token_map) for chemo in positive_chemo_mentions)
+        # tlink_instances = (get_tlink_instance(chemo, cas, base_tokens, token_map)
+        # for chemo in positive_chemo_mentions)
+        conmod_instances = (get_conmod_instance(chemo, cas) for chemo in chemo_mentions)
+        conmod_classifications = (result["label"] for result in self.conmod_classifier(conmod_instances))
+
+        positive_chemo_mentions = (chemo for chemo, modality in zip(chemo_mentions, conmod_classifications)
+                                   if modality == "ACTUAL")
+
+        self._write_positive_chemo_mentions(cas, positive_chemo_mentions)
+
+    def _write_positive_chemo_mentions(self, cas, positive_chemo_mentions):
+        # TODO - figure out how to get DCT from within PBJ using SourceData
+        DCT = None
         base_tokens, token_map = tokens_and_map(cas)
-        events = cas.select(self.event_mention_type)
-        
-    # Called once at the end of the pipeline.
+
+        dtr_instances = (get_dtr_instance(chemo, cas, base_tokens, token_map) for chemo in positive_chemo_mentions)
+        #tlink_instances = (get_tlink_instance(chemo, cas, base_tokens, token_map) for chemo in positive_chemo_mentions)
+
+        dtr_classifications = (result["label"] for result in self.dtr_classifier(dtr_instances))
+        #tlink_classifications = (result["label"] for result in self.tlink_classifier(tlink_instances))
+
+
+
+
+# Called once at the end of the pipeline.
     def collection_process_complete(self):
         # TODO - summarization code here
         pass
