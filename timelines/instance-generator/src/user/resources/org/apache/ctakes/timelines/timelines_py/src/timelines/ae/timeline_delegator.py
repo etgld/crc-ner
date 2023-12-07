@@ -25,6 +25,7 @@ from cassis.cas import Cas
 
 logger = logging.getLogger(__name__)
 
+
 def tokens_and_map(cas: Cas) -> Tuple[List[str], List[Tuple[int, int]]]:
     base_tokens = []
     token_map = []
@@ -52,18 +53,24 @@ def invert_map(token_map: List[Tuple[int, int]]) -> Dict[int, int]:
     for token_index, token_boundaries in enumerate(token_map):
         for boundary in token_boundaries:
             if boundary in inverse_map.keys():
-                logger.warn(f"pre-existing entry {inverse_map[boundary]} in reverse token map")
+                logger.warn(
+                    f"pre-existing entry {inverse_map[boundary]} in reverse token map"
+                )
             inverse_map[boundary] = token_index
     return inverse_map
 
-def get_conmod_instance(mention, cas) -> str:
-    pass
 
-def get_tlink_instance(mention, cas, tokens, token_map) -> str:
-    pass
+def get_conmod_instance(event, cas) -> str:
+    return ""
 
-def get_dtr_instance(mention, cas, tokens, token_map) -> str:
-    pass
+
+def get_tlink_instance(event, timex, cas, tokens, token_map) -> str:
+    return ""
+
+
+def get_dtr_instance(event, cas, tokens, token_map) -> str:
+    return ""
+
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
     def __init__(self, cas):
@@ -120,28 +127,37 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         # tlink_instances = (get_tlink_instance(chemo, cas, base_tokens, token_map)
         # for chemo in positive_chemo_mentions)
         conmod_instances = (get_conmod_instance(chemo, cas) for chemo in chemo_mentions)
-        conmod_classifications = (result["label"] for result in self.conmod_classifier(conmod_instances))
+        conmod_classifications = (
+            result["label"] for result in self.conmod_classifier(conmod_instances)
+        )
 
-        positive_chemo_mentions = (chemo for chemo, modality in zip(chemo_mentions, conmod_classifications)
-                                   if modality == "ACTUAL")
+        positive_chemo_mentions = (
+            chemo
+            for chemo, modality in zip(chemo_mentions, conmod_classifications)
+            if modality == "ACTUAL"
+        )
 
         self._write_positive_chemo_mentions(cas, positive_chemo_mentions)
 
     def _write_positive_chemo_mentions(self, cas, positive_chemo_mentions):
         # TODO - figure out how to get DCT from within PBJ using SourceData
-        DCT = None
+        cas_metadata_collection = cas.select( ctakes_types.Metadata )
+
+
         base_tokens, token_map = tokens_and_map(cas)
 
-        dtr_instances = (get_dtr_instance(chemo, cas, base_tokens, token_map) for chemo in positive_chemo_mentions)
-        #tlink_instances = (get_tlink_instance(chemo, cas, base_tokens, token_map) for chemo in positive_chemo_mentions)
+        dtr_instances = (
+            get_dtr_instance(chemo, cas, base_tokens, token_map)
+            for chemo in positive_chemo_mentions
+        )
+        # tlink_instances = (get_tlink_instance(chemo, cas, base_tokens, token_map) for chemo in positive_chemo_mentions)
 
-        dtr_classifications = (result["label"] for result in self.dtr_classifier(dtr_instances))
-        #tlink_classifications = (result["label"] for result in self.tlink_classifier(tlink_instances))
+        dtr_classifications = (
+            result["label"] for result in self.dtr_classifier(dtr_instances)
+        )
+        # tlink_classifications = (result["label"] for result in self.tlink_classifier(tlink_instances))
 
-
-
-
-# Called once at the end of the pipeline.
+    # Called once at the end of the pipeline.
     def collection_process_complete(self):
         # TODO - summarization code here
         pass
