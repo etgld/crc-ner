@@ -1,5 +1,6 @@
 import time
 import logging
+import pandas as pd
 
 from transformers import pipeline
 from ctakes_pbj.component import cas_annotator
@@ -22,6 +23,7 @@ from cassis.typesystem import (
 )
 
 from cassis.cas import Cas
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +74,10 @@ def get_dtr_instance(event, cas, tokens, token_map) -> str:
     return ""
 
 
+def get_window_timexes(event):
+    return []
+
+
 class TimelineDelegator(cas_annotator.CasAnnotator):
     def __init__(self, cas):
         self.event_mention_type = cas.typesystem.get_type(ctakes_types.EventMention)
@@ -84,11 +90,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         self.dtr_classifier = None
         self.tlink_classifier = None
         self.conmod_classifier = None
-        # TODO - we need to figure out if
-        # how to represent patients, cancer types, etc
-        # by which organize the result, for now just assume
-        # everything in the input folder is the same patient
-        self.raw_events = None
+        self.raw_events = defaultdict(list)
 
     def init_params(self, args):
         self._dtr_path = args.dtr_path
@@ -107,8 +109,6 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         self.conmod_classifier = pipeline(
             "text-classification", model=self._conmod_path, tokenizer=self._conmod_path
         )
-
-        self.raw_events = []
 
     def declare_params(self, arg_parser):
         arg_parser.add_arg("dtr_path")
@@ -140,11 +140,21 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         self._write_positive_chemo_mentions(cas, positive_chemo_mentions)
 
     def _write_positive_chemo_mentions(self, cas, positive_chemo_mentions):
-        # TODO - figure out how to get DCT from within PBJ using SourceData
-        cas_metadata_collection = cas.select( ctakes_types.Metadata )
-
+        cas_metadata_collection = cas.select(ctakes_types.Metadata)
+        cas_metadata = list(cas_metadata_collection)[0]
+        cas_source_data = cas_metadata.getSourceData()
+        # in its normalized string form, maybe need some exceptions
+        # for if it's missing describing the file spec
+        document_creation_time = cas_source_data.getSourceOriginalDate()
 
         base_tokens, token_map = tokens_and_map(cas)
+        inv_token_map = {}
+        for token_index, character_index_pair in enumerate(token_map):
+            char_begin, char_end = character_index_pair
+            # if char_begin in inv_token_map or char_end in inv_token_map:
+            # TODO - add exception
+            inv_token_map[char_begin] = token_index
+            inv_token_map[char_begin] = token_index
 
         dtr_instances = (
             get_dtr_instance(chemo, cas, base_tokens, token_map)
@@ -152,12 +162,52 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         )
         # tlink_instances = (get_tlink_instance(chemo, cas, base_tokens, token_map) for chemo in positive_chemo_mentions)
 
-        dtr_classifications = (
-            result["label"] for result in self.dtr_classifier(dtr_instances)
-        )
-        # tlink_classifications = (result["label"] for result in self.tlink_classifier(tlink_instances))
+        dtr_classifications = {
+            (chemo.begin, chemo.end): result["label"]
+            for chemo, result in zip(
+                positive_chemo_mentions, self.dtr_classifier(dtr_instances)
+            )
+        }
 
-    # Called once at the end of the pipeline.
+        def tlink_result_dict(event):
+            window_timexes = get_window_timexes(event)
+
+            tlink_instances = (
+                get_tlink_instance(event, timex, cas, base_tokens, token_map)
+                for timex in window_timexes
+            )
+
+            return {
+                timex: result["label"]
+                for timex, result in zip(
+                    window_timexes, self.tlink_classifier(tlink_instances)
+                )
+            }
+
+        tlink_classifications = {
+            chemo: tlink_result_dict(chemo) for chemo in positive_chemo_mentions
+        }
+
+        for chemo in positive_chemo_mentions:
+            chemo_dtr = dtr_classifications[chemo]
+            for timex, chemo_timex_rel in tlink_classifications[chemo]:
+                self.raw_events["patient"].append(
+                    [
+                        document_creation_time,
+                        chemo.get_covered_text(),
+                        chemo_dtr,
+                        timex.get_covered_text(),
+                        chemo_timex_rel,
+                    ]
+                )
+
     def collection_process_complete(self):
-        # TODO - summarization code here
-        pass
+        # Per 12/6/23 meeting, summarization is done
+        # outside the Docker to maximize the ability for the user
+        # to customize everything.  So we just write the raw results
+        # to tsv
+        for pt_id, records in self.raw_events.items():
+            pt_df = pd.DataFrame.from_records(
+                records, columns=["DCT", "chemo_text", "dtr", "timex", "tlink"]
+            )
+            pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
