@@ -1,15 +1,12 @@
-import time
+import os
 import logging
 import pandas as pd
 
 from transformers import pipeline
 from ctakes_pbj.component import cas_annotator
 from ctakes_pbj.pbj_tools import create_type
-from ctakes_pbj.pbj_tools.create_relation import create_relation
-from ctakes_pbj.pbj_tools.event_creator import EventCreator
-from ctakes_pbj.pbj_tools.helper_functions import get_covered_list
 from ctakes_pbj.type_system import ctakes_types
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 from cassis.typesystem import (
     # FEATURE_BASE_NAME_HEAD,
     # TYPE_NAME_FS_ARRAY,
@@ -28,19 +25,21 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 
-def tokens_and_map(cas: Cas) -> Tuple[List[str], List[Tuple[int, int]]]:
+def tokens_and_map(
+    cas: Cas, context: Optional[FeatureStructure] = None
+) -> Tuple[List[str], List[Tuple[int, int]]]:
     base_tokens = []
     token_map = []
     newline_tokens = cas.select(ctakes_types.NewlineToken)
     newline_token_indices = {(item.begin, item.end) for item in newline_tokens}
 
-    for base_token in sorted(cas.select(ctakes_types.BaseToken), key=lambda t: t.begin):
-        if (
-            (base_token.begin, base_token.end)
-            not in newline_token_indices
-            # and base_token.get_covered_text()
-            # and not base_token.get_covered_text().isspace()
-        ):
+    token_collection = (
+        cas.select(ctakes_types.BaseToken)
+        if context is None
+        else cas.select_covered(ctakes_types.BaseToken, context)
+    )
+    for base_token in sorted(token_collection, key=lambda t: t.begin):
+        if (base_token.begin, base_token.end) not in newline_token_indices:
             base_tokens.append(base_token.get_covered_text())
             token_map.append((base_token.begin, base_token.end))
         else:
@@ -53,24 +52,44 @@ def tokens_and_map(cas: Cas) -> Tuple[List[str], List[Tuple[int, int]]]:
 def invert_map(token_map: List[Tuple[int, int]]) -> Dict[int, int]:
     inverse_map = {}
     for token_index, token_boundaries in enumerate(token_map):
-        for boundary in token_boundaries:
-            if boundary in inverse_map.keys():
-                logger.warn(
-                    f"pre-existing entry {inverse_map[boundary]} in reverse token map"
-                )
-            inverse_map[boundary] = token_index
+        begin, end = token_boundaries
+        if begin in inverse_map.keys():
+            logger.warn(
+                f"pre-existing token begin entry {begin} -> {inverse_map[begin]} in reverse token map"
+            )
+
+        if end in inverse_map.keys():
+            logger.warn(
+                f"pre-existing token end entry {end} -> {inverse_map[end]} in reverse token map"
+            )
+        inverse_map[begin] = token_index
+        inverse_map[end] = token_index
     return inverse_map
 
 
 def get_conmod_instance(event, cas) -> str:
-    return ""
+    raw_sentence = cas.select_covering(ctakes_types.Sentence, event)[0]
+    tokens, token_map = tokens_and_map(cas, raw_sentence)
+    inverse_map = invert_map(token_map)
+    event_begin = inverse_map[event.begin] + 1
+    event_end = inverse_map[event.end]
+    str_builder = (
+        tokens[:event_begin]
+        + ["<e>"]
+        + tokens[event_begin:event_end]
+        + ["</e>"]
+        + tokens[event_end:]
+    )
+    return " ".join(str_builder)
 
 
 def get_tlink_instance(event, timex, cas, tokens, token_map) -> str:
+    window_radius = 10
     return ""
 
 
 def get_dtr_instance(event, cas, tokens, token_map) -> str:
+    window_radius = 10
     return ""
 
 
@@ -87,9 +106,9 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         self._dtr_path = None
         self._tlink_path = None
         self._conmod_path = None
-        self.dtr_classifier = None
-        self.tlink_classifier = None
-        self.conmod_classifier = None
+        self.dtr_classifier = lambda _: []
+        self.tlink_classifier = lambda _: []
+        self.conmod_classifier = lambda _: []
         self.raw_events = defaultdict(list)
 
     def init_params(self, args):
@@ -128,9 +147,9 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         # for chemo in positive_chemo_mentions)
         conmod_instances = (get_conmod_instance(chemo, cas) for chemo in chemo_mentions)
         conmod_classifications = (
-            result["label"] for result in self.conmod_classifier(conmod_instances)
+            result["label"]
+            for result in filter(None, self.conmod_classifier(conmod_instances))
         )
-
         positive_chemo_mentions = (
             chemo
             for chemo, modality in zip(chemo_mentions, conmod_classifications)
@@ -148,13 +167,6 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         document_creation_time = cas_source_data.getSourceOriginalDate()
 
         base_tokens, token_map = tokens_and_map(cas)
-        inv_token_map = {}
-        for token_index, character_index_pair in enumerate(token_map):
-            char_begin, char_end = character_index_pair
-            # if char_begin in inv_token_map or char_end in inv_token_map:
-            # TODO - add exception
-            inv_token_map[char_begin] = token_index
-            inv_token_map[char_begin] = token_index
 
         dtr_instances = (
             get_dtr_instance(chemo, cas, base_tokens, token_map)
@@ -163,7 +175,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         # tlink_instances = (get_tlink_instance(chemo, cas, base_tokens, token_map) for chemo in positive_chemo_mentions)
 
         dtr_classifications = {
-            (chemo.begin, chemo.end): result["label"]
+            chemo: result["label"]
             for chemo, result in zip(
                 positive_chemo_mentions, self.dtr_classifier(dtr_instances)
             )
@@ -188,10 +200,14 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             chemo: tlink_result_dict(chemo) for chemo in positive_chemo_mentions
         }
 
+        document_path_collection = cas.select(ctakes_types.DocumentPath)
+        document_path = list(document_path_collection)[0]
+        patient_id = os.path.basename(os.path.dirname(document_path))
+
         for chemo in positive_chemo_mentions:
             chemo_dtr = dtr_classifications[chemo]
             for timex, chemo_timex_rel in tlink_classifications[chemo]:
-                self.raw_events["patient"].append(
+                self.raw_events[patient_id].append(
                     [
                         document_creation_time,
                         chemo.get_covered_text(),
