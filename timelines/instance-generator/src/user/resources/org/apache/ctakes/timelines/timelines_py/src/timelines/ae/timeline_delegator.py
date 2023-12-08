@@ -6,7 +6,7 @@ from transformers import pipeline
 from ctakes_pbj.component import cas_annotator
 from ctakes_pbj.pbj_tools import create_type
 from ctakes_pbj.type_system import ctakes_types
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, Generator
 from cassis.typesystem import (
     # FEATURE_BASE_NAME_HEAD,
     # TYPE_NAME_FS_ARRAY,
@@ -23,6 +23,8 @@ from cassis.cas import Cas
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)
+
+_window_radius = 10
 
 
 def tokens_and_map(
@@ -67,12 +69,12 @@ def invert_map(token_map: List[Tuple[int, int]]) -> Dict[int, int]:
     return inverse_map
 
 
-def get_conmod_instance(event, cas) -> str:
+def get_conmod_instance(event: FeatureStructure, cas: Cas) -> str:
     raw_sentence = cas.select_covering(ctakes_types.Sentence, event)[0]
     tokens, token_map = tokens_and_map(cas, raw_sentence)
-    inverse_map = invert_map(token_map)
-    event_begin = inverse_map[event.begin] + 1
-    event_end = inverse_map[event.end]
+    char2token = invert_map(token_map)
+    event_begin = char2token[event.begin]
+    event_end = char2token[event.end] + 1
     str_builder = (
         tokens[:event_begin]
         + ["<e>"]
@@ -83,18 +85,50 @@ def get_conmod_instance(event, cas) -> str:
     return " ".join(str_builder)
 
 
-def get_tlink_instance(event, timex, cas, tokens, token_map) -> str:
-    window_radius = 10
+def get_tlink_instance(
+    event: FeatureStructure,
+    timex: FeatureStructure,
+    cas: Cas,
+    tokens: List[str],
+    char2token: Dict[int, int],
+) -> str:
     return ""
 
 
-def get_dtr_instance(event, cas, tokens, token_map) -> str:
-    window_radius = 10
-    return ""
+def get_dtr_instance(
+    event: FeatureStructure, tokens: List[str], char2token: Dict[int, int]
+) -> str:
+    # raw_sentence = cas.select_covering(ctakes_types.Sentence, event)[0]
+    # tokens, token_map = tokens_and_map(cas, raw_sentence)
+    # inverse_map = invert_map(token_map)
+    event_begin = char2token[event.begin]
+    event_end = char2token[event.end] + 1
+    # window_tokens = tokens[event_begin - window_radius:event_end + window_radius - 1]
+    str_builder = (
+        tokens[event_begin - _window_radius : event_begin]
+        + ["<e>"]
+        + tokens[event_begin:event_end]
+        + ["</e>"]
+        + tokens[event_end : event_end + _window_radius]
+    )
+    return " ".join(str_builder)
 
 
-def get_window_timexes(event):
-    return []
+def get_window_timexes(
+    event: FeatureStructure,
+    cas: Cas,
+    char2token: Dict[int, int],
+    token2char: List[Tuple[int, int]],
+) -> Generator[FeatureStructure, None, None]:
+    event_begin_token_index = char2token[event.begin]
+    event_end_token_index = char2token[event.end]
+    char_window_begin = token2char[event_begin_token_index][0]
+    char_window_end = token2char[event_end_token_index][1]
+    def in_window(index):
+        return index >= char_window_begin and index <= char_window_end
+    for timex in cas.select(ctakes_types.TimeMention):
+        if in_window(timex.begin) and in_window(timex.end):
+            yield timex
 
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
@@ -137,14 +171,9 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
     # Process Sentences, adding Times, Events and TLinks found by cNLPT.
     def process(self, cas: Cas):
         # TODO - will need CUI-based filtering later but for now assume everything is a chemo mention
-        self.write_chemo_mentions(cas, cas.select(self.event_mention_type))
+        self.write_raw_timelines(cas, cas.select(self.event_mention_type))
 
-    def write_chemo_mentions(self, cas: Cas, chemo_mentions):
-        # base_tokens, token_map = tokens_and_map(cas)
-
-        # dtr_instances = (get_dtr_instance(chemo, cas, base_tokens, token_map) for chemo in positive_chemo_mentions)
-        # tlink_instances = (get_tlink_instance(chemo, cas, base_tokens, token_map)
-        # for chemo in positive_chemo_mentions)
+    def write_raw_timelines(self, cas: Cas, chemo_mentions):
         conmod_instances = (get_conmod_instance(chemo, cas) for chemo in chemo_mentions)
         conmod_classifications = (
             result["label"]
@@ -167,12 +196,12 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         document_creation_time = cas_source_data.getSourceOriginalDate()
 
         base_tokens, token_map = tokens_and_map(cas)
+        char2token = invert_map(token_map)
 
         dtr_instances = (
-            get_dtr_instance(chemo, cas, base_tokens, token_map)
+            get_dtr_instance(chemo, base_tokens, char2token)
             for chemo in positive_chemo_mentions
         )
-        # tlink_instances = (get_tlink_instance(chemo, cas, base_tokens, token_map) for chemo in positive_chemo_mentions)
 
         dtr_classifications = {
             chemo: result["label"]
@@ -182,13 +211,11 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         }
 
         def tlink_result_dict(event):
-            window_timexes = get_window_timexes(event)
-
+            window_timexes = get_window_timexes(event, cas, char2token, token_map)
             tlink_instances = (
-                get_tlink_instance(event, timex, cas, base_tokens, token_map)
+                get_tlink_instance(event, timex, cas, base_tokens, char2token)
                 for timex in window_timexes
             )
-
             return {
                 timex: result["label"]
                 for timex, result in zip(
@@ -212,7 +239,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                         document_creation_time,
                         chemo.get_covered_text(),
                         chemo_dtr,
-                        timex.get_covered_text(),
+                        timex.get_covered_text() if timex is not None else "ERROR",
                         chemo_timex_rel,
                     ]
                 )
