@@ -6,14 +6,14 @@ from transformers import pipeline
 from ctakes_pbj.component import cas_annotator
 from ctakes_pbj.pbj_tools import create_type
 from ctakes_pbj.type_system import ctakes_types
-from typing import List, Tuple, Dict, Optional, Generator
+from typing import List, Tuple, Dict, Optional, Generator, Union
 from cassis.typesystem import (
     # FEATURE_BASE_NAME_HEAD,
     # TYPE_NAME_FS_ARRAY,
     # TYPE_NAME_FS_LIST,
     # TYPE_NAME_SOFA,
     FeatureStructure,
-    # Type,
+    Type,
     # TypeCheckError,
     # TypeSystem,
     # TypeSystemMode,
@@ -88,11 +88,44 @@ def get_conmod_instance(event: FeatureStructure, cas: Cas) -> str:
 def get_tlink_instance(
     event: FeatureStructure,
     timex: FeatureStructure,
-    cas: Cas,
     tokens: List[str],
     char2token: Dict[int, int],
 ) -> str:
-    return ""
+    event_begin = char2token[event.begin]
+    event_end = char2token[event.end] + 1
+    event_tags = ("<e>", "</e>")
+    event_packet = (event_begin, event_end, event_tags)
+    timex_begin = char2token[timex.begin]
+    timex_end = char2token[timex.end] + 1
+    timex_tags = ("<t>", "</t>")
+    timex_packet = (timex_begin, timex_end, timex_tags)
+
+    first_packet, second_packet = sorted(
+        (event_packet, timex_packet), key=lambda s: s[0]
+    )
+    (first_begin, first_end, first_tags) = first_packet
+    (first_open_tag, first_close_tag) = first_tags
+
+    (second_begin, second_end, second_tags) = second_packet
+    (second_open_tag, second_close_tag) = second_tags
+    str_builder = (
+        # since the window is around the event,
+        # from the beginning to the first mention
+        tokens[event_begin - _window_radius : first_begin]
+        # tag body of the first mention
+        + [first_open_tag]
+        + tokens[first_begin:first_end]
+        + [first_close_tag]
+        # intermediate part of the window
+        + tokens[first_end:second_begin]
+        # tag body of the second mention
+        + [second_open_tag]
+        + tokens[second_begin:second_end]
+        + [second_close_tag]
+        # ending part of the window
+        + tokens[second_end : event_end + _window_radius]
+    )
+    return " ".join(str_builder)
 
 
 def get_dtr_instance(
@@ -114,9 +147,10 @@ def get_dtr_instance(
     return " ".join(str_builder)
 
 
-def get_window_timexes(
+def get_window_mentions(
     event: FeatureStructure,
     cas: Cas,
+    mention_type: Union[Type, str],
     char2token: Dict[int, int],
     token2char: List[Tuple[int, int]],
 ) -> Generator[FeatureStructure, None, None]:
@@ -124,11 +158,13 @@ def get_window_timexes(
     event_end_token_index = char2token[event.end]
     char_window_begin = token2char[event_begin_token_index][0]
     char_window_end = token2char[event_end_token_index][1]
+
     def in_window(index):
         return index >= char_window_begin and index <= char_window_end
-    for timex in cas.select(ctakes_types.TimeMention):
-        if in_window(timex.begin) and in_window(timex.end):
-            yield timex
+
+    for mention in cas.select(mention_type):
+        if in_window(mention.begin) and in_window(mention.end):
+            yield mention
 
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
@@ -211,7 +247,9 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         }
 
         def tlink_result_dict(event):
-            window_timexes = get_window_timexes(event, cas, char2token, token_map)
+            window_timexes = get_window_mentions(
+                event, cas, self.timex_type, char2token, token_map
+            )
             tlink_instances = (
                 get_tlink_instance(event, timex, cas, base_tokens, char2token)
                 for timex in window_timexes
