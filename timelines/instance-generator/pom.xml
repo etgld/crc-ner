@@ -27,6 +27,12 @@
 
     <dependency>
       <groupId>org.apache.ctakes</groupId>
+      <artifactId>ctakes-temporal</artifactId>
+      <version>${ctakes.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.ctakes</groupId>
       <artifactId>ctakes-pbj</artifactId>
       <version>${ctakes.version}</version>
     </dependency>
@@ -48,6 +54,5 @@
       <artifactId>tweaked-timenorm</artifactId>
       <version>${project.parent.version}</version>
     </dependency>
-
   </dependencies>
 </project>
