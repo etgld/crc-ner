@@ -15,11 +15,11 @@ set exclusionTags=“”
 
 load PbjStarter
 
-add PythonRunner Command="-m pip install ../resources/org/apache/ctakes/timelines/timelines_py" Wait=yes
+add PythonRunner Command="-m pip install resources/org/apache/ctakes/timelines/timelines_py" Wait=yes
 
 set TimelinesSecondStep=timelines.timelines_pipeline
 
-add PythonRunner Command="-m $TimelineSecondStep JavaToPy --dtr_model_path $DTRModelDir --modality_model_path $ModalityModelPath --TlinkModelPath $TlinkModelPath PyToJava -o $OutputDirectory"
+add PythonRunner Command="-m $TimelinesSecondStep JavaToPy PyToJava -o $OutputDirectory --dtr_path $DTRModelPath --conomd_path $ModalityModelPath --tlink_path $TlinkModelPath"
 
 load DefaultFastPipeline
 
