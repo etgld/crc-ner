@@ -6,19 +6,18 @@ package org.apache.ctakes.temporal.util
 
 set SetJavaHome=no
 
+cli DTRModelPath=d
+cli ModalityModelPath=m
+cli TlinkModelPath=t
+
 set minimumSpan=2
 set exclusionTags=“”
 
 load PbjStarter
 
-cli DTRModelPath=d
-cli ModalityModelPath=m
-cli TlinkModelPath=t
+add PythonRunner Command="-m pip install ../resources/org/apache/ctakes/timelines/timelines_py" Wait=yes
 
-
-add PythonRunner Command="-m pip install resources/org/apache/ctakes/timelines/timelines_py" Wait=yes
-
-set TimelinesSecondStep=ctakes_cnlpt.timelines_pipeline
+set TimelinesSecondStep=timelines.timelines_pipeline
 
 add PythonRunner Command="-m $TimelineSecondStep JavaToPy --dtr_model_path $DTRModelDir --modality_model_path $ModalityModelPath --TlinkModelPath $TlinkModelPath PyToJava -o $OutputDirectory"
 
@@ -30,7 +29,5 @@ add DCTAnnotator
 add PbjJmsSender SendQueue=JavaToPy SendStop=yes
 
 add PbjReceiverAE ReceiveQueue=PyToJava
-
-add Summarizer
 
 add ArtemisStopper
