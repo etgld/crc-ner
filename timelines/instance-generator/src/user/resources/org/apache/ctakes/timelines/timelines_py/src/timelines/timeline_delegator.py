@@ -168,11 +168,7 @@ def get_window_mentions(
 
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
-    def __init__(self, cas):
-        self.event_mention_type = cas.typesystem.get_type(ctakes_types.EventMention)
-        self.timex_type = cas.typesystem.get_type(ctakes_types.TimeMention)
-        self.tlink_type = cas.typesystem.get_type(ctakes_types.TemporalTextRelation)
-        self.argument_type = cas.typesystem.get_type(ctakes_types.RelationArgument)
+    def __init__(self):
         self._dtr_path = None
         self._tlink_path = None
         self._conmod_path = None
@@ -200,14 +196,16 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         )
 
     def declare_params(self, arg_parser):
-        arg_parser.add_arg("dtr_path")
-        arg_parser.add_arg("tlink_path")
-        arg_parser.add_arg("conmod_path")
+        arg_parser.add_arg("--dtr_path")
+        arg_parser.add_arg("--tlink_path")
+        arg_parser.add_arg("--conmod_path")
 
     # Process Sentences, adding Times, Events and TLinks found by cNLPT.
     def process(self, cas: Cas):
         # TODO - will need CUI-based filtering later but for now assume everything is a chemo mention
-        self.write_raw_timelines(cas, cas.select(self.event_mention_type))
+        self.write_raw_timelines(
+            cas, cas.select(cas.typesystem.get_type(ctakes_types.EventMention))
+        )
 
     def write_raw_timelines(self, cas: Cas, chemo_mentions):
         conmod_instances = (get_conmod_instance(chemo, cas) for chemo in chemo_mentions)
@@ -224,6 +222,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         self._write_positive_chemo_mentions(cas, positive_chemo_mentions)
 
     def _write_positive_chemo_mentions(self, cas, positive_chemo_mentions):
+        timex_type = cas.typesystem.get_type(ctakes_types.TimeMention)
         cas_metadata_collection = cas.select(ctakes_types.Metadata)
         cas_metadata = list(cas_metadata_collection)[0]
         cas_source_data = cas_metadata.getSourceData()
@@ -248,10 +247,10 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
         def tlink_result_dict(event):
             window_timexes = get_window_mentions(
-                event, cas, self.timex_type, char2token, token_map
+                event, cas, timex_type, char2token, token_map
             )
             tlink_instances = (
-                get_tlink_instance(event, timex, cas, base_tokens, char2token)
+                get_tlink_instance(event, timex, base_tokens, char2token)
                 for timex in window_timexes
             )
             return {
