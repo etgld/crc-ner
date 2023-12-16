@@ -54,17 +54,24 @@ ENV PATH $M2:$PATH
 # Change directory to build the rt_parser jar
 WORKDIR /usr/src/app/timelines
 
+#  hold-over until I debug this issue with nu-pip 
+RUN pip install stomp.py dkpro-cassis transformers[torch] pandas
+
 RUN mvn clean package
+
 
 # Execute the parser jar
 CMD ["java", "-cp", \
-"target/txtimelines-lookup-5.0.0-SNAPSHOT-jar-with-dependencies.jar", \
+"instance-generator/target/instance-generator-5.0.0-SNAPSHOT-jar-with-dependencies.jar", \
 "org.apache.ctakes.core.pipeline.PiperFileRunner", \
 "-p", "org/apache/ctakes/timelines/pipeline/Timelines", \
 "-i", "/usr/src/app/input", \
 "-o", "/usr/src/app/output", \
 "-a", "/usr/src/app/mybroker", \
 "-v", "/usr/bin/python", \
-"-dtr_path", "/usr/src/app/dtr", \
-"-tlink_path", "/usr/src/app/tlink", \
-"-conmod_path", "/usr/src/app/conmod"]
+"-d", "/usr/src/app/dtr", \
+"-t", "/usr/src/app/tlink", \
+"-m", "/usr/src/app/conmod", \
+"-l", "org/apache/ctakes/dictionary/lookup/fast/bsv/Chemotherapy.xml", \
+"--pipPbj", "yes", \
+"--key", "9302930b-26f3-497d-8b32-3277c257293c"]

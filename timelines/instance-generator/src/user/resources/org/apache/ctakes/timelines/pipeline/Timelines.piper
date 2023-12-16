@@ -5,6 +5,8 @@ set SetJavaHome=no
 cli DTRModelPath=d
 cli ModalityModelPath=m
 cli TlinkModelPath=t
+// cli ReceivePort=r
+// cli SendPort=s
 
 load PbjStarter
 
@@ -12,8 +14,8 @@ add PythonRunner Command="-m pip install resources/org/apache/ctakes/timelines/t
 
 set TimelinesSecondStep=timelines.timelines_pipeline
 
+// add PythonRunner Command="-m $TimelinesSecondStep JavaToPy PyToJava -o $OutputDirectory --dtr_path $DTRModelPath --conmod_path $ModalityModelPath --tlink_path $TlinkModelPath --receive_port $ReceivePort --send_port $SendPort"
 add PythonRunner Command="-m $TimelinesSecondStep JavaToPy PyToJava -o $OutputDirectory --dtr_path $DTRModelPath --conmod_path $ModalityModelPath --tlink_path $TlinkModelPath"
-
 set minimumSpan=2
 set exclusionTags=“”
 
