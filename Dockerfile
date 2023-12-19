@@ -55,7 +55,8 @@ ENV PATH $M2:$PATH
 WORKDIR /usr/src/app/timelines
 
 #  hold-over until I debug this issue with nu-pip 
-RUN pip install stomp.py dkpro-cassis transformers[torch] pandas
+# RUN pip install stomp.py dkpro-cassis transformers[torch] pandas tomli setuptools
+RUN python -m pip install tomli setuptools
 
 RUN mvn clean package
 

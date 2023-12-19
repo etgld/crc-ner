@@ -56,12 +56,12 @@ def invert_map(token_map: List[Tuple[int, int]]) -> Dict[int, int]:
     for token_index, token_boundaries in enumerate(token_map):
         begin, end = token_boundaries
         if begin in inverse_map.keys():
-            logger.warn(
+            print(
                 f"pre-existing token begin entry {begin} -> {inverse_map[begin]} in reverse token map"
             )
 
         if end in inverse_map.keys():
-            logger.warn(
+            print(
                 f"pre-existing token end entry {end} -> {inverse_map[end]} in reverse token map"
             )
         inverse_map[begin] = token_index
@@ -169,6 +169,7 @@ def get_window_mentions(
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
     def __init__(self):
+        print("In __init__")
         self._dtr_path = None
         self._tlink_path = None
         self._conmod_path = None
@@ -177,37 +178,69 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         self.conmod_classifier = lambda _: []
         self.raw_events = defaultdict(list)
 
-    def init_params(self, args):
-        self._dtr_path = args.dtr_path
-        self._tlink_path = args.tlink_path
-        self._conmod_path = args.conmod_path
-
-    def initialize(self):
+    def init_params(self, arg_parser):
+        print("In init_params")
+        self._dtr_path = arg_parser.dtr_path
+        self._tlink_path = arg_parser.tlink_path
+        self._conmod_path = arg_parser.conmod_path
+        print("params populated")
         self.dtr_classifier = pipeline(
             "text-classification", model=self._dtr_path, tokenizer=self._dtr_path
         )
 
+        print("DTR classifier loaded")
         self.tlink_classifier = pipeline(
             "text-classification", model=self._tlink_path, tokenizer=self._tlink_path
         )
 
+        print("TLINK classifier loaded")
         self.conmod_classifier = pipeline(
             "text-classification", model=self._conmod_path, tokenizer=self._conmod_path
         )
 
+        print("Conmod classifier loaded")
+
+    def initialize(self):
+        # print("In inititalize")
+        # self.dtr_classifier = pipeline(
+        #     "text-classification",
+        #     model=self._dtr_path,
+        #     tokenizer=self._dtr_path
+        # )
+
+        # print("DTR classifier loaded")
+        # self.tlink_classifier = pipeline(
+        #     "text-classification",
+        #     model=self._tlink_path,
+        #     tokenizer=self._tlink_path
+        # )
+
+        # print("TLINK classifier loaded")
+        # self.conmod_classifier = pipeline(
+        #     "text-classification",
+        #     model=self._conmod_path,
+        #     tokenizer=self._conmod_path
+        # )
+
+        # print("Conmod classifier loaded")
+        pass
+
     def declare_params(self, arg_parser):
+        print("In declare_params")
         arg_parser.add_arg("--dtr_path")
         arg_parser.add_arg("--tlink_path")
         arg_parser.add_arg("--conmod_path")
 
     # Process Sentences, adding Times, Events and TLinks found by cNLPT.
     def process(self, cas: Cas):
-        # TODO - will need CUI-based filtering later but for now assume everything is a chemo mention
+        print("Processing CAS")
+        # TODO - will need CUI-based filtering later
         self.write_raw_timelines(
             cas, cas.select(cas.typesystem.get_type(ctakes_types.EventMention))
         )
 
     def write_raw_timelines(self, cas: Cas, chemo_mentions):
+        print("in write_raw_timelines")
         conmod_instances = (get_conmod_instance(chemo, cas) for chemo in chemo_mentions)
         conmod_classifications = (
             result["label"]
@@ -222,10 +255,9 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         self._write_positive_chemo_mentions(cas, positive_chemo_mentions)
 
     def _write_positive_chemo_mentions(self, cas, positive_chemo_mentions):
+        print("in _write_positive_chemo_mentions")
         timex_type = cas.typesystem.get_type(ctakes_types.TimeMention)
-        cas_metadata_collection = cas.select(ctakes_types.Metadata)
-        cas_metadata = list(cas_metadata_collection)[0]
-        cas_source_data = cas_metadata.getSourceData()
+        cas_source_data = cas.select(ctakes_types.Metadata)[0].getSourceData()
         # in its normalized string form, maybe need some exceptions
         # for if it's missing describing the file spec
         document_creation_time = cas_source_data.getSourceOriginalDate()

@@ -1,4 +1,5 @@
 import warnings
+import logging
 
 from ctakes_pbj.component.pbj_receiver import start_receiver, PBJReceiver
 from ctakes_pbj.component.pbj_sender import PBJSender
@@ -8,10 +9,10 @@ from .timeline_delegator import TimelineDelegator
 
 
 warnings.filterwarnings("ignore")
-
+logger = logging.getLogger(__name__)
 
 def main():
-
+    print("In main of PBJ annotator driver")
     # Create a new PBJ Pipeline, add a class that interacts with cNLPT to add Negation to Events.
     pipeline = PBJPipeline()
     receiver = PBJReceiver()
