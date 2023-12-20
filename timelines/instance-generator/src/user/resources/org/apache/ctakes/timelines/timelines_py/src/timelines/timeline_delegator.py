@@ -160,7 +160,7 @@ def get_window_mentions(
     char_window_end = token2char[event_end_token_index][1]
 
     def in_window(index):
-        return index >= char_window_begin and index <= char_window_end
+        return char_window_begin <= index <= char_window_end
 
     for mention in cas.select(mention_type):
         if in_window(mention.begin) and in_window(mention.end):
@@ -282,12 +282,12 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 event, cas, timex_type, char2token, token_map
             )
             tlink_instances = (
-                get_tlink_instance(event, timex, base_tokens, char2token)
-                for timex in window_timexes
+                get_tlink_instance(event, w_timex, base_tokens, char2token)
+                for w_timex in window_timexes
             )
             return {
                 timex: result["label"]
-                for timex, result in zip(
+                for w_timex, result in zip(
                     window_timexes, self.tlink_classifier(tlink_instances)
                 )
             }
