@@ -183,6 +183,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         self._dtr_path = arg_parser.dtr_path
         self._tlink_path = arg_parser.tlink_path
         self._conmod_path = arg_parser.conmod_path
+        """
         print("params populated")
         self.dtr_classifier = pipeline(
             "text-classification", model=self._dtr_path, tokenizer=self._dtr_path
@@ -199,31 +200,32 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         )
 
         print("Conmod classifier loaded")
+        """
 
     def initialize(self):
-        # print("In inititalize")
-        # self.dtr_classifier = pipeline(
-        #     "text-classification",
-        #     model=self._dtr_path,
-        #     tokenizer=self._dtr_path
-        # )
+        print("In inititalize")
+        self.dtr_classifier = pipeline(
+            "text-classification",
+            model=self._dtr_path,
+            tokenizer=self._dtr_path
+        )
 
-        # print("DTR classifier loaded")
-        # self.tlink_classifier = pipeline(
-        #     "text-classification",
-        #     model=self._tlink_path,
-        #     tokenizer=self._tlink_path
-        # )
+        print("DTR classifier loaded")
+        self.tlink_classifier = pipeline(
+            "text-classification",
+            model=self._tlink_path,
+            tokenizer=self._tlink_path
+        )
 
-        # print("TLINK classifier loaded")
-        # self.conmod_classifier = pipeline(
-        #     "text-classification",
-        #     model=self._conmod_path,
-        #     tokenizer=self._conmod_path
-        # )
+        print("TLINK classifier loaded")
+        self.conmod_classifier = pipeline(
+            "text-classification",
+            model=self._conmod_path,
+            tokenizer=self._conmod_path
+        )
 
-        # print("Conmod classifier loaded")
-        pass
+        print("Conmod classifier loaded")
+
 
     def declare_params(self, arg_parser):
         print("In declare_params")
@@ -306,7 +308,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 self.raw_events[patient_id].append(
                     [
                         document_creation_time,
-                        chemo.get_covered_text(),
+                        chemo.get_covered_text() if chemo is not None else "ERROR",
                         chemo_dtr,
                         timex.get_covered_text() if timex is not None else "ERROR",
                         chemo_timex_rel,

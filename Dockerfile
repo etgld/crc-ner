@@ -55,7 +55,7 @@ ENV PATH $M2:$PATH
 WORKDIR /usr/src/app/timelines
 
 #  hold-over until I debug this issue with nu-pip 
-# RUN pip install stomp.py dkpro-cassis transformers[torch] pandas tomli setuptools
+RUN pip install stomp.py dkpro-cassis transformers[torch] pandas tomli setuptools
 RUN python -m pip install tomli setuptools
 
 RUN mvn clean package
@@ -74,5 +74,7 @@ CMD ["java", "-cp", \
 "-t", "/usr/src/app/tlink", \
 "-m", "/usr/src/app/conmod", \
 "-l", "org/apache/ctakes/dictionary/lookup/fast/bsv/Chemotherapy.xml", \
+"-u", "deepphe", \
+"-w", "deepphe", \
 "--pipPbj", "yes", \
 "--key", "9302930b-26f3-497d-8b32-3277c257293c"]

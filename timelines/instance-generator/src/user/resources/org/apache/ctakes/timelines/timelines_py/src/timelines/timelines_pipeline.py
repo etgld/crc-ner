@@ -17,11 +17,11 @@ def main():
     pipeline = PBJPipeline()
     receiver = PBJReceiver()
     annotator = TimelineDelegator()
-    sender = PBJSender()
+    # sender = PBJSender()
     pipeline.reader(receiver)
     pipeline.add(annotator)
     # Add a PBJ Sender to the end of the pipeline to send the processed cas back to cTAKES and initialize the pipeline.
-    pipeline.add(sender)
+    # pipeline.add(sender)
     pipeline.initialize()
     pipeline.run()
     # Start a PBJ receiver to accept cas objects from Artemis and process them in the pipeline.

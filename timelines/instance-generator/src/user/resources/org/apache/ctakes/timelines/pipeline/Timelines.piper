@@ -6,24 +6,21 @@ cli ModalityModelPath=m
 cli TlinkModelPath=t
 // cli ReceivePort=r
 // cli SendPort=s
+// cli BrokerUser=u
+// cli BrokerPwd=w
 
 load PbjStarter
 
 add PythonRunner Command="-m pip install resources/org/apache/ctakes/timelines/timelines_py" Wait=yes
-// add PythonRunner Command="-m pip install resources/org/apache/ctakes/pbj/ctakes_pbj_py" Wait=yes
-
-
 
 set TimelinesSecondStep=timelines.timelines_pipeline
 
-// add PythonRunner Command="-m $TimelinesSecondStep send_queue JavaToPy receive_queue PyToJava -o $OutputDirectory --dtr_path $DTRModelPath --conmod_path $ModalityModelPath --tlink_path $TlinkModelPath --receive_port $ReceivePort --send_port $SendPort"
-// add PythonRunner Command="-m $TimelinesSecondStep JavaToPy PyToJava -o $OutputDirectory --dtr_path $DTRModelPath --conmod_path $ModalityModelPath --tlink_path $TlinkModelPath"
-add PythonRunner Command="-m $TimelinesSecondStep receive_queue PyToJava send_queue JavaToPy   -o $OutputDirectory --dtr_path $DTRModelPath --conmod_path $ModalityModelPath --tlink_path $TlinkModelPath"
+add PythonRunner Command="-m $TimelinesSecondStep -rq JavaToPy -o $OutputDirectory --dtr_path $DTRModelPath --conmod_path $ModalityModelPath --tlink_path $TlinkModelPath"
 set minimumSpan=2
 set exclusionTags=“”
 
-// Pitt sentencing and tokenization
 load DictionarySubPipe
+// Pitt sentencing and tokenization
 add SegmentsFromBracketedSectionTagsAnnotator
 add SentenceDetectorAnnotatorBIO classifierJarPath=/org/apache/ctakes/core/models/sentdetect/model.jar
 add TokenizerAnnotatorPTB
@@ -33,6 +30,6 @@ add DCTAnnotator
 
 add PbjJmsSender SendQueue=JavaToPy SendStop=yes
 
-add PbjReceiverAE ReceiveQueue=PyToJava
+// add PbjReceiverAE ReceiveQueue=PyToJava
 
 add ArtemisStopper
