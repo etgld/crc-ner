@@ -1,5 +1,64 @@
 package org.apache.ctakes.timelines
 
+
+
+
+
+
+// below is PbjStarter without the ExitForcer
+
+// Set the command line parameter -a to accept the directory of the Artemis broker.
+cli ArtemisBroker=a
+// Set the command line parameter -v to accept the directory of the Python environment.
+cli VirtualEnv=v
+// Set the command line parameter --pipPbj to 'no' to avoid a pip of pbj at the beginning of the run.
+cli PipPbj=pipPbj
+
+
+// Write nice big banners when ctakes starts and finishes.
+set WriteBanner=yes
+
+//
+// Start the Artemis broker and pause 5 seconds.
+//
+// Important: You must create an Artemis Broker before running.
+// See "Creating a Broker Instance" at https://activemq.apache.org/components/artemis/documentation/1.0.0/running-server.html
+// The ArtemisBroker must point to the directory of the broker that you create.
+//
+
+add ArtemisStarter Pause=5
+
+//
+// pip the dependency packages in case your environment doesn't have them or needs an update.
+//
+add PbjPipper
+
+// Add the Finished Logger for some run statistics.
+addLast util.log.FinishedLogger
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //set SetJavaHome=no
 cli DTRModelPath=d
 cli ModalityModelPath=m
@@ -9,7 +68,7 @@ cli TlinkModelPath=t
 // cli BrokerUser=u
 // cli BrokerPwd=w
 
-load PbjStarter
+// load PbjStarter
 
 add PythonRunner Command="-m pip install resources/org/apache/ctakes/timelines/timelines_py" Wait=yes
 
@@ -32,4 +91,4 @@ add PbjJmsSender SendQueue=JavaToPy SendStop=yes
 
 // add PbjReceiverAE ReceiveQueue=PyToJava
 
-add ArtemisStopper
+// add ArtemisStopper

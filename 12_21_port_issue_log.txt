@@ -157,3 +157,216 @@ dphe-timelines  |
 dphe-timelines  | 
 dphe-timelines  | 21 Dec 2023 20:25:56  INFO PbjSender - Sending Stop code to localhost JavaToPy ...
 dphe-timelines  | 21 Dec 2023 20:25:56  INFO PbjJmsSender - Disconnected PBJ Sender on localhost JavaToPy ...
+
+
+UPDATED
+
+
+(base) etg@etg-Precision-7530:~/Repos/txtimelines-lookup$ sudo docker compose up
+[+] Running 1/1
+ ✔ Container dphe-timelines  Recreated                                                                                                                                                                                             0.1s
+Attaching to dphe-timelines
+dphe-timelines  | log4j: reset attribute= "false".
+dphe-timelines  | log4j: Threshold ="null".
+dphe-timelines  | log4j: Retreiving an instance of org.apache.log4j.Logger.
+dphe-timelines  | log4j: Setting [ProgressAppender] additivity to [false].
+dphe-timelines  | log4j: Level value for ProgressAppender is  [INFO].
+dphe-timelines  | log4j: ProgressAppender level set to INFO
+dphe-timelines  | log4j: Class name: [org.apache.log4j.ConsoleAppender]
+dphe-timelines  | log4j: Parsing layout of class: "org.apache.log4j.PatternLayout"
+dphe-timelines  | log4j: Setting property [conversionPattern] to [%m].
+dphe-timelines  | log4j: Adding appender named [noEolAppender] to category [ProgressAppender].
+dphe-timelines  | log4j: Retreiving an instance of org.apache.log4j.Logger.
+dphe-timelines  | log4j: Setting [ProgressDone] additivity to [false].
+dphe-timelines  | log4j: Level value for ProgressDone is  [INFO].
+dphe-timelines  | log4j: ProgressDone level set to INFO
+dphe-timelines  | log4j: Class name: [org.apache.log4j.ConsoleAppender]
+dphe-timelines  | log4j: Parsing layout of class: "org.apache.log4j.PatternLayout"
+dphe-timelines  | log4j: Setting property [conversionPattern] to [%m%n].
+dphe-timelines  | log4j: Adding appender named [eolAppender] to category [ProgressDone].
+dphe-timelines  | log4j: Level value for root is  [INFO].
+dphe-timelines  | log4j: root level set to INFO
+dphe-timelines  | log4j: Class name: [org.apache.log4j.ConsoleAppender]
+dphe-timelines  | log4j: Parsing layout of class: "org.apache.log4j.PatternLayout"
+dphe-timelines  | log4j: Setting property [conversionPattern] to [%d{dd MMM yyyy HH:mm:ss} %5p %c{1} - %m%n].
+dphe-timelines  | log4j: Adding appender named [consoleAppender] to category [root].
+dphe-timelines  | 22 Dec 2023 16:47:35  INFO PiperFileReader - Loading Piper File org/apache/ctakes/timelines/pipeline/Timelines ...
+dphe-timelines  | 22 Dec 2023 16:47:35  INFO PiperFileReader - Loading Piper File PbjStarter ...
+dphe-timelines  |
+dphe-timelines  | 22 Dec 2023 16:47:35  INFO PiperFileReader - Loading Piper File DictionarySubPipe ...
+dphe-timelines  |
+dphe-timelines  |
+dphe-timelines  |
+dphe-timelines  |
+dphe-timelines  |    Welcome to
+dphe-timelines  |
+dphe-timelines  |
+dphe-timelines  |       _/_/                                  _/
+dphe-timelines  |    _/    _/  _/_/_/      _/_/_/    _/_/_/  _/_/_/      _/_/
+dphe-timelines  |   _/_/_/_/  _/    _/  _/    _/  _/        _/    _/  _/_/_/_/
+dphe-timelines  |  _/    _/  _/    _/  _/    _/  _/        _/    _/  _/
+dphe-timelines  | _/    _/  _/_/_/      _/_/_/    _/_/_/  _/    _/    _/_/_/
+dphe-timelines  |          _/
+dphe-timelines  |         _/
+dphe-timelines  |                         _/_/_/_/_/    _/_/    _/    _/  _/_/_/_/    _/_/_/
+dphe-timelines  |                _/_/_/      _/      _/    _/  _/  _/    _/        _/
+dphe-timelines  |             _/            _/      _/_/_/_/  _/_/      _/_/_/      _/_/
+dphe-timelines  |            _/            _/      _/    _/  _/  _/    _/              _/
+dphe-timelines  |             _/_/_/      _/      _/    _/  _/    _/  _/_/_/_/  _/_/_/
+dphe-timelines  |
+dphe-timelines  |
+dphe-timelines  |
+dphe-timelines  | 22 Dec 2023 16:47:35  INFO ArtemisStarter - Starting Apache Artemis ...
+dphe-timelines  | .........
+dphe-timelines  | 22 Dec 2023 16:47:40  INFO PbjPipper - Since ctakes-pbj is pip installed from source, pip will always perform an install.
+dphe-timelines  | 22 Dec 2023 16:47:40  INFO PbjPipper - To turn off the pip use "set PipPbj=no" in your piper file
+dphe-timelines  | 22 Dec 2023 16:47:40  INFO PbjPipper -  or add "--pipPbj no" to your command line.
+dphe-timelines  | 22 Dec 2023 16:47:40  INFO PythonRunner - Starting python -u -m pip install resources/org/apache/ctakes/pbj/ctakes_pbj_py/ ...
+dphe-timelines  | 22 Dec 2023 16:47:41  INFO pip - Processing ./resources/org/apache/ctakes/pbj/ctakes_pbj_py
+dphe-timelines  | 22 Dec 2023 16:47:41  INFO pip -   Installing build dependencies: started
+dphe-timelines  | 22 Dec 2023 16:47:43  INFO pip -   Installing build dependencies: finished with status 'done'
+dphe-timelines  | 22 Dec 2023 16:47:43  INFO pip -   Getting requirements to build wheel: started
+dphe-timelines  | 22 Dec 2023 16:47:43  INFO pip -   Getting requirements to build wheel: finished with status 'done'
+dphe-timelines  | 22 Dec 2023 16:47:43  INFO pip -   Installing backend dependencies: started
+dphe-timelines  | 22 Dec 2023 16:47:44  INFO pip -   Installing backend dependencies: finished with status 'done'
+dphe-timelines  | 22 Dec 2023 16:47:44  INFO pip -   Preparing metadata (pyproject.toml): started
+dphe-timelines  | 22 Dec 2023 16:47:44  INFO pip -   Preparing metadata (pyproject.toml): finished with status 'done'
+dphe-timelines  | 22 Dec 2023 16:47:44  INFO pip - Building wheels for collected packages: ctakes-pbj
+dphe-timelines  | 22 Dec 2023 16:47:44  INFO pip -   Building wheel for ctakes-pbj (pyproject.toml): started
+dphe-timelines  | 22 Dec 2023 16:47:45  INFO pip -   Building wheel for ctakes-pbj (pyproject.toml): finished with status 'done'
+dphe-timelines  | 22 Dec 2023 16:47:45  INFO pip -   Created wheel for ctakes-pbj: filename=ctakes_pbj-5.0.0-py3-none-any.whl size=20877 sha256=7630ddd2998e87f9cbc1002faa908510b2cf2d986e8c7307d3deb7e0b2537df5
+dphe-timelines  | 22 Dec 2023 16:47:45  INFO pip -   Stored in directory: /tmp/pip-ephem-wheel-cache-ygyuztz8/wheels/48/23/ba/7b2ade4b9709369b09aafb4c2f77eca3610a2916b4a38df51a
+dphe-timelines  | 22 Dec 2023 16:47:45  INFO pip - Successfully built ctakes-pbj
+dphe-timelines  | 22 Dec 2023 16:47:45  INFO pip - Installing collected packages: ctakes-pbj
+dphe-timelines  | 22 Dec 2023 16:47:45  INFO pip - Successfully installed ctakes-pbj-5.0.0
+dphe-timelines  | 22 Dec 2023 16:47:45 ERROR pip - WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+dphe-timelines  | 22 Dec 2023 16:47:45  INFO PythonRunner - Starting python -u -m pip install resources/org/apache/ctakes/timelines/timelines_py ...
+dphe-timelines  | 22 Dec 2023 16:47:46  INFO pip - Processing ./resources/org/apache/ctakes/timelines/timelines_py
+dphe-timelines  | 22 Dec 2023 16:47:46  INFO pip -   Installing build dependencies: started
+dphe-timelines  | 22 Dec 2023 16:47:48  INFO pip -   Installing build dependencies: finished with status 'done'
+dphe-timelines  | 22 Dec 2023 16:47:48  INFO pip -   Getting requirements to build wheel: started
+dphe-timelines  | 22 Dec 2023 16:47:48  INFO pip -   Getting requirements to build wheel: finished with status 'done'
+dphe-timelines  | 22 Dec 2023 16:47:48  INFO pip -   Installing backend dependencies: started
+dphe-timelines  | 22 Dec 2023 16:47:49  INFO pip -   Installing backend dependencies: finished with status 'done'
+dphe-timelines  | 22 Dec 2023 16:47:49  INFO pip -   Preparing metadata (pyproject.toml): started
+dphe-timelines  | 22 Dec 2023 16:47:49  INFO pip -   Preparing metadata (pyproject.toml): finished with status 'done'
+dphe-timelines  | 22 Dec 2023 16:47:49  INFO pip - Building wheels for collected packages: timelines
+dphe-timelines  | 22 Dec 2023 16:47:49  INFO pip -   Building wheel for timelines (pyproject.toml): started
+dphe-timelines  | 22 Dec 2023 16:47:49  INFO pip -   Building wheel for timelines (pyproject.toml): finished with status 'done'
+dphe-timelines  | 22 Dec 2023 16:47:49  INFO pip -   Created wheel for timelines: filename=timelines-5.0.0-py3-none-any.whl size=5172 sha256=71e3f357d862dc7f05397046bae3a0c90cba66854212d1f898a931ea18ba1b6f
+dphe-timelines  | 22 Dec 2023 16:47:49  INFO pip -   Stored in directory: /tmp/pip-ephem-wheel-cache-0fjgks2m/wheels/d9/a5/92/4b1fad091117c8573659b041975a21f756b1cfdf2de12b61a9
+dphe-timelines  | 22 Dec 2023 16:47:49  INFO pip - Successfully built timelines
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO pip - Installing collected packages: timelines
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO pip - Successfully installed timelines-5.0.0
+dphe-timelines  | 22 Dec 2023 16:47:50 ERROR pip - WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO SystemUtil - Substituting Parameter Value timelines.timelines_pipeline for $TimelinesSecondStep
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO SystemUtil - Substituting Parameter Value /usr/src/app/output for $OutputDirectory
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO SystemUtil - Substituting Parameter Value /usr/src/app/dtr for $DTRModelPath
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO SystemUtil - Substituting Parameter Value /usr/src/app/conmod for $ModalityModelPath
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO SystemUtil - Substituting Parameter Value /usr/src/app/tlink for $TlinkModelPath
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO PythonRunner - Starting python -u -m timelines.timelines_pipeline  -rq JavaToPy -o /usr/src/app/output  --dtr_path /usr/src/app/dtr  --conmod_path /usr/src/app/conmod  --tlink_path /usr/src/app/tlink ...
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO AbstractJCasTermAnnotator - Using dictionary lookup window type: org.apache.ctakes.typesystem.type.textspan.Sentence
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO AbstractJCasTermAnnotator - Exclusion tagset loaded: ??????
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO AbstractJCasTermAnnotator - Using minimum term text span: 2
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO AbstractJCasTermAnnotator - Using Dictionary Descriptor: org/apache/ctakes/dictionary/lookup/fast/bsv/Chemotherapy.xml
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO DictionaryDescriptorParser - Parsing dictionary specifications:
+dphe-timelines  | 22 Dec 2023 16:47:50  INFO UmlsUserApprover - Checking UMLS Account at https://utslogin.nlm.nih.gov/cas/v1/api-key:
+dphe-timelines  | 22 Dec 2023 16:47:51  INFO UmlsUserApprover -   UMLS Account has been validated
+dphe-timelines  |
+dphe-timelines  | 22 Dec 2023 16:47:51  INFO JdbcConnectionFactory - Connecting to jdbc:hsqldb:file:resources/org/apache/ctakes/dictionary/lookup/fast/hsqldb/Chemotherapy:
+dphe-timelines  | 22 Dec 2023 16:47:51  INFO ENGINE - open start - state not modified
+dphe-timelines  | .
+dphe-timelines  | 22 Dec 2023 16:47:51  INFO JdbcConnectionFactory -  Database connected
+dphe-timelines  | 22 Dec 2023 16:47:51  INFO JdbcRareWordDictionary - Connected to cui and term table CUI_TERMS
+dphe-timelines  | 22 Dec 2023 16:47:51  INFO JdbcConceptFactory - Connected to concept table TUI with class TUI
+dphe-timelines  | 22 Dec 2023 16:47:51  INFO JdbcConceptFactory - Connected to concept table PREFTERM with class PREFTERM
+dphe-timelines  | 22 Dec 2023 16:47:51  INFO SentenceDetectorAnnotatorBIO - Initializing ...
+dphe-timelines  | 22 Dec 2023 16:47:52  INFO TokenizerAnnotatorPTB - Initializing org.apache.ctakes.core.ae.TokenizerAnnotatorPTB
+dphe-timelines  | 22 Dec 2023 16:47:52  INFO BackwardsTimeAnnotator - Initializing ...
+dphe-timelines  |
+dphe-timelines  | 22 Dec 2023 16:47:52  INFO PbjSender - Starting PBJ Sender on localhost JavaToPy ...
+dphe-timelines  | 22 Dec 2023 16:47:52  INFO PbjJmsSender - Connecting PBJ Sender on localhost JavaToPy ...
+dphe-timelines  |
+dphe-timelines  |
+dphe-timelines  |     _/_/_/
+dphe-timelines  |    _/    _/  _/  _/_/    _/_/      _/_/_/    _/_/      _/_/_/    _/_/_/
+dphe-timelines  |   _/_/_/    _/_/      _/    _/  _/        _/_/_/_/  _/_/      _/_/
+dphe-timelines  |  _/        _/        _/    _/  _/        _/            _/_/      _/_/
+dphe-timelines  | _/        _/          _/_/      _/_/_/    _/_/_/  _/_/_/    _/_/_/
+dphe-timelines  |
+dphe-timelines  |
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO FileTreeReader - Reading /usr/src/app/input/patient04_report001_RAD.txt ...
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO AbstractJCasTermAnnotator - Finding Named Entities ...
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO AbstractJCasTermAnnotator - Finished processing
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO SentenceDetectorAnnotatorBIO - Processing ...
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO TokenizerAnnotatorPTB - process(JCas) in org.apache.ctakes.core.ae.TokenizerAnnotatorPTB
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO BackwardsTimeAnnotator - Finding Times ...
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO DCTAnnotator - DeepPhe Non-Spec Note patient04_report001_RAD: Ensure is UPMC
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO DCTAnnotator - DeepPhe Non-Spec Note patient04_report001_RAD Time is Set to 2012-01-11
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO PbjSender - Sending processed information to localhost JavaToPy ...
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO timelines_pipeline - In main of PBJ annotator driver
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO timelines_pipeline - In __init__
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO timelines_pipeline - Creating arg_parser
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO timelines_pipeline - In declare_params
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO timelines_pipeline - Parsing Arguments
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO timelines_pipeline - In init_params
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO timelines_pipeline - In inititalize
+dphe-timelines  |
+dphe-timelines  |
+dphe-timelines  |     _/_/_/_/  _/            _/            _/                        _/
+dphe-timelines  |    _/            _/_/_/          _/_/_/  _/_/_/      _/_/      _/_/_/
+dphe-timelines  |   _/_/_/    _/  _/    _/  _/  _/_/      _/    _/  _/_/_/_/  _/    _/
+dphe-timelines  |  _/        _/  _/    _/  _/      _/_/  _/    _/  _/        _/    _/
+dphe-timelines  | _/        _/  _/    _/  _/  _/_/_/    _/    _/    _/_/_/    _/_/_/
+dphe-timelines  |
+dphe-timelines  |
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO PbjSender - Sending Stop code to localhost JavaToPy ...
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO PbjJmsSender - Disconnected PBJ Sender on localhost JavaToPy ...
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO ArtemisStopper - Stopping Apache Artemis ...
+dphe-timelines  | Run Start Time:               Fri Dec 22 16:47:35 UTC 2023
+dphe-timelines  | Processing Start Time:        Fri Dec 22 16:47:53 UTC 2023
+dphe-timelines  | Processing End Time:          Fri Dec 22 16:47:53 UTC 2023
+dphe-timelines  | Initialization Time Elapsed:  18 seconds
+dphe-timelines  | Processing Time Elapsed:      0 seconds
+dphe-timelines  | Total Run Time Elapsed:       18 seconds
+dphe-timelines  | Documents Processed:          1
+dphe-timelines  | Average Seconds per Document: 0.47
+dphe-timelines  | 22 Dec 2023 16:47:53  INFO ExitForcer - Pausing 3 seconds ...
+dphe-timelines  | .22 Dec 2023 16:47:54  INFO timelines_pipeline - DTR classifier loaded
+dphe-timelines  | .22 Dec 2023 16:47:55  INFO timelines_pipeline - TLINK classifier loaded
+dphe-timelines  | ..22 Dec 2023 16:47:56  INFO timelines_pipeline - Conmod classifier loaded
+dphe-timelines  | 22 Dec 2023 16:47:56  INFO timelines_pipeline - Fri Dec 22 16:47:56 2023 Starting Stomp Receiver on localhost JavaToPy ...
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline - could not connect to host localhost, port 61616
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline - could not connect to host localhost, port 61616
+dphe-timelines  | .22 Dec 2023 16:47:56 ERROR timelines_pipeline - could not connect to host localhost, port 61616
+dphe-timelines  |
+dphe-timelines  | 22 Dec 2023 16:47:56  INFO ExitForcer - Exiting.
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline - Traceback (most recent call last):
+dphe-timelines  | 22 Dec 2023 16:47:56  INFO PbjSender - Sending Stop code to localhost JavaToPy ...
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -   File "/usr/lib64/python3.9/runpy.py", line 197, in _run_module_as_main
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -     return _run_code(code, main_globals, None,
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -   File "/usr/lib64/python3.9/runpy.py", line 87, in _run_code
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -     exec(code, run_globals)
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -   File "/usr/local/lib/python3.9/site-packages/timelines/timelines_pipeline.py", line 31, in <module>
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -     main()
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -   File "/usr/local/lib/python3.9/site-packages/timelines/timelines_pipeline.py", line 26, in main
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -     pipeline.run()
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -   File "/usr/local/lib/python3.9/site-packages/ctakes_pbj/pipeline/pbj_pipeline.py", line 49, in run
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -     self.c_reader.start()
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -   File "/usr/local/lib/python3.9/site-packages/ctakes_pbj/component/pbj_receiver.py", line 48, in start
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -     start_receiver(self.pipeline, self.queue, self.host, self.port,
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -   File "/usr/local/lib/python3.9/site-packages/ctakes_pbj/pbj_tools/stomp_receiver.py", line 14, in start_receiver
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -     StompReceiver(pipeline, queue_name, host_name, port_name, password, username, r_id)
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -   File "/usr/local/lib/python3.9/site-packages/ctakes_pbj/pbj_tools/stomp_receiver.py", line 36, in __init__
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -     self.__connect_and_subscribe()
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -   File "/usr/local/lib/python3.9/site-packages/ctakes_pbj/pbj_tools/stomp_receiver.py", line 39, in __connect_and_subscribe
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -     self.conn.connect(self.username, self.password, wait=True)
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -   File "/usr/local/lib/python3.9/site-packages/stomp/connect.py", line 198, in connect
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -     self.transport.start()
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -   File "/usr/local/lib/python3.9/site-packages/stomp/transport.py", line 108, in start
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -     self.attempt_connection()
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -   File "/usr/local/lib/python3.9/site-packages/stomp/transport.py", line 807, in attempt_connection
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline -     raise exception.ConnectFailedException()
+dphe-timelines  | 22 Dec 2023 16:47:56 ERROR timelines_pipeline - stomp.exception.ConnectFailedException
+dphe-timelines  | 22 Dec 2023 16:47:56  INFO ENGINE - Database closed
+dphe-timelines exited with code 0

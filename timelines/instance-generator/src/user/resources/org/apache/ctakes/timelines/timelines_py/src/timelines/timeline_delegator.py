@@ -205,27 +205,20 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
     def initialize(self):
         print("In inititalize")
         self.dtr_classifier = pipeline(
-            "text-classification",
-            model=self._dtr_path,
-            tokenizer=self._dtr_path
+            "text-classification", model=self._dtr_path, tokenizer=self._dtr_path
         )
 
         print("DTR classifier loaded")
         self.tlink_classifier = pipeline(
-            "text-classification",
-            model=self._tlink_path,
-            tokenizer=self._tlink_path
+            "text-classification", model=self._tlink_path, tokenizer=self._tlink_path
         )
 
         print("TLINK classifier loaded")
         self.conmod_classifier = pipeline(
-            "text-classification",
-            model=self._conmod_path,
-            tokenizer=self._conmod_path
+            "text-classification", model=self._conmod_path, tokenizer=self._conmod_path
         )
 
         print("Conmod classifier loaded")
-
 
     def declare_params(self, arg_parser):
         print("In declare_params")
@@ -259,10 +252,10 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
     def _write_positive_chemo_mentions(self, cas, positive_chemo_mentions):
         print("in _write_positive_chemo_mentions")
         timex_type = cas.typesystem.get_type(ctakes_types.TimeMention)
-        cas_source_data = cas.select(ctakes_types.Metadata)[0].getSourceData()
-        # in its normalized string form, maybe need some exceptions
-        # for if it's missing describing the file spec
-        document_creation_time = cas_source_data.getSourceOriginalDate()
+        # cas_source_data = cas.select(ctakes_types.Metadata)[0].getSourceData()
+        # # in its normalized string form, maybe need some exceptions
+        # # for if it's missing describing the file spec
+        # document_creation_time = cas_source_data.getSourceOriginalDate()
 
         base_tokens, token_map = tokens_and_map(cas)
         char2token = invert_map(token_map)
@@ -307,7 +300,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             for timex, chemo_timex_rel in tlink_classifications[chemo]:
                 self.raw_events[patient_id].append(
                     [
-                        document_creation_time,
+                        "PLACEHOLDER_DCT",  # document_creation_time,
                         chemo.get_covered_text() if chemo is not None else "ERROR",
                         chemo_dtr,
                         timex.get_covered_text() if timex is not None else "ERROR",
@@ -316,6 +309,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 )
 
     def collection_process_complete(self):
+        print("In collection_process_complete")
         # Per 12/6/23 meeting, summarization is done
         # outside the Docker to maximize the ability for the user
         # to customize everything.  So we just write the raw results
