@@ -291,10 +291,11 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
     def _write_positive_chemo_mentions(self, cas, positive_chemo_mentions):
         print("in _write_positive_chemo_mentions")
         timex_type = cas.typesystem.get_type(ctakes_types.TimeMention)
-        # cas_source_data = cas.select(ctakes_types.Metadata)[0].getSourceData()
-        # # in its normalized string form, maybe need some exceptions
-        # # for if it's missing describing the file spec
-        # document_creation_time = cas_source_data.getSourceOriginalDate()
+        print(cas.select(ctakes_types.Metadata)[0])
+        cas_source_data = cas.select(ctakes_types.Metadata)[0].sourceData
+        # in its normalized string form, maybe need some exceptions
+        # for if it's missing describing the file spec
+        document_creation_time = cas_source_data.sourceOriginalDate
 
         base_tokens, token_map = tokens_and_map(cas)
         begin2token, end2token = invert_map(token_map)
@@ -336,16 +337,16 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             chemo: tlink_result_dict(chemo) for chemo in positive_chemo_mentions
         }
 
-        # document_path_collection = cas.select(ctakes_types.DocumentPath)
-        # document_path = list(document_path_collection)[0]
-        # patient_id = os.path.basename(os.path.dirname(document_path))
-        patient_id = "THE_DUD"
+        document_path_collection = cas.select(ctakes_types.DocumentPath)
+        document_path = list(document_path_collection)[0].documentPath
+        patient_id = os.path.basename(os.path.dirname(document_path))
+        # patient_id = "THE_DUD"
         for chemo in positive_chemo_mentions:
             chemo_dtr = dtr_classifications[chemo]
             for timex, chemo_timex_rel in tlink_classifications[chemo]:
                 self.raw_events[patient_id].append(
                     [
-                        "PLACEHOLDER_DCT",  # document_creation_time,
+                        document_creation_time,
                         chemo.get_covered_text() if chemo is not None else "ERROR",
                         chemo_dtr,
                         timex.get_covered_text() if timex is not None else "ERROR",
