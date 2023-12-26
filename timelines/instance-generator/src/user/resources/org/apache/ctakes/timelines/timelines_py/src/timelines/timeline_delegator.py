@@ -34,47 +34,81 @@ def tokens_and_map(
     token_map = []
     newline_tokens = cas.select(ctakes_types.NewlineToken)
     newline_token_indices = {(item.begin, item.end) for item in newline_tokens}
+    duplicates = defaultdict(list)
 
-    token_collection = (
+    raw_token_collection = (
         cas.select(ctakes_types.BaseToken)
         if context is None
         else cas.select_covered(ctakes_types.BaseToken, context)
     )
-    for base_token in sorted(token_collection, key=lambda t: t.begin):
-        if (base_token.begin, base_token.end) not in newline_token_indices:
-            base_tokens.append(base_token.get_covered_text())
-            token_map.append((base_token.begin, base_token.end))
-        else:
-            # since these indices are tracked as well in the timelines code presumably
-            base_tokens.append("<cr>")
-            token_map.append((base_token.begin, base_token.end))
+
+    token_collection: Dict[int, Tuple[int, str]] = {}
+    for base_token in raw_token_collection:
+        begin = base_token.begin
+        end = base_token.end
+        token_text = base_token.get_covered_text() if (begin, end) not in newline_token_indices else "<cr>"
+        if begin in token_collection:
+            prior_end, prior_text = token_collection[begin]
+            print(
+                f"WARNING: two tokens {(token_text, begin, end)} and {(prior_text, begin, prior_end)} overwriting with latest"
+            )
+        token_collection[begin] = (end, token_text)
+    for begin in sorted(token_collection):
+        end, token_text = token_collection[begin]
+        base_tokens.append(token_text)
+        token_map.append((begin, end))
+
+    # for base_token in sorted(token_collection, key=lambda t: t.begin):
+    #     if (base_token.begin, base_token.end) not in newline_token_indices:
+    #         base_tokens.append(base_token.get_covered_text())
+    #         token_map.append((base_token.begin, base_token.end))
+    #         duplicates[(base_token.begin, base_token.end)].append(
+    #             base_token.get_covered_text()
+    #         )
+    #     else:
+    #         # since these indices are tracked as well in the timelines code presumably
+    #         base_tokens.append("<cr>")
+    #         token_map.append((base_token.begin, base_token.end))
+    #         duplicates[(base_token.begin, base_token.end)].append("<cr>")
+    # for inds, tokens in duplicates.items():
+    #     if len(tokens) > 1:
+    #         print(f"{tokens} {inds}")
     return base_tokens, token_map
 
 
-def invert_map(token_map: List[Tuple[int, int]]) -> Dict[int, int]:
-    inverse_map = {}
+def invert_map(
+    token_map: List[Tuple[int, int]]
+) -> Tuple[Dict[int, int], Dict[int, int]]:
+    begin_map: Dict[int, int] = {}
+    end_map: Dict[int, int] = {}
     for token_index, token_boundaries in enumerate(token_map):
         begin, end = token_boundaries
-        if begin in inverse_map.keys():
+        if begin in begin_map:
             print(
-                f"pre-existing token begin entry {begin} -> {inverse_map[begin]} in reverse token map"
+                f"pre-existing token begin entry {begin} -> {begin_map[begin]} against {token_index} in reverse token map"
+            )
+            print(
+                f"full currently stored token info {begin_map[begin]} -> {token_map[begin_map[begin]]} against current candidate {token_index} -> {(begin, end)}"
             )
 
-        if end in inverse_map.keys():
+        if end in end_map:
             print(
-                f"pre-existing token end entry {end} -> {inverse_map[end]} in reverse token map"
+                f"pre-existing token end entry {end} -> {end_map[end]} against {token_index} in reverse token map"
             )
-        inverse_map[begin] = token_index
-        inverse_map[end] = token_index
-    return inverse_map
+            print(
+                f"full currently stored token info {end_map[end]} -> {token_map[end_map[end]]} against current candidate {token_index} -> {(begin, end)}"
+            )
+        begin_map[begin] = token_index
+        end_map[end] = token_index
+    return begin_map, end_map
 
 
 def get_conmod_instance(event: FeatureStructure, cas: Cas) -> str:
     raw_sentence = cas.select_covering(ctakes_types.Sentence, event)[0]
     tokens, token_map = tokens_and_map(cas, raw_sentence)
-    char2token = invert_map(token_map)
-    event_begin = char2token[event.begin]
-    event_end = char2token[event.end] + 1
+    begin2token, end2token = invert_map(token_map)
+    event_begin = begin2token[event.begin]
+    event_end = end2token[event.end] + 1
     str_builder = (
         tokens[:event_begin]
         + ["<e>"]
@@ -89,14 +123,15 @@ def get_tlink_instance(
     event: FeatureStructure,
     timex: FeatureStructure,
     tokens: List[str],
-    char2token: Dict[int, int],
+    begin2token: Dict[int, int],
+    end2token: Dict[int, int],
 ) -> str:
-    event_begin = char2token[event.begin]
-    event_end = char2token[event.end] + 1
+    event_begin = begin2token[event.begin]
+    event_end = end2token[event.end] + 1
     event_tags = ("<e>", "</e>")
     event_packet = (event_begin, event_end, event_tags)
-    timex_begin = char2token[timex.begin]
-    timex_end = char2token[timex.end] + 1
+    timex_begin = begin2token[timex.begin]
+    timex_end = end2token[timex.end] + 1
     timex_tags = ("<t>", "</t>")
     timex_packet = (timex_begin, timex_end, timex_tags)
 
@@ -129,13 +164,16 @@ def get_tlink_instance(
 
 
 def get_dtr_instance(
-    event: FeatureStructure, tokens: List[str], char2token: Dict[int, int]
+    event: FeatureStructure,
+    tokens: List[str],
+    begin2token: Dict[int, int],
+    end2token: Dict[int, int],
 ) -> str:
     # raw_sentence = cas.select_covering(ctakes_types.Sentence, event)[0]
     # tokens, token_map = tokens_and_map(cas, raw_sentence)
     # inverse_map = invert_map(token_map)
-    event_begin = char2token[event.begin]
-    event_end = char2token[event.end] + 1
+    event_begin = begin2token[event.begin]
+    event_end = end2token[event.end] + 1
     # window_tokens = tokens[event_begin - window_radius:event_end + window_radius - 1]
     str_builder = (
         tokens[event_begin - _window_radius : event_begin]
@@ -151,11 +189,12 @@ def get_window_mentions(
     event: FeatureStructure,
     cas: Cas,
     mention_type: Union[Type, str],
-    char2token: Dict[int, int],
+    begin2token: Dict[int, int],
+    end2token: Dict[int, int],
     token2char: List[Tuple[int, int]],
 ) -> Generator[FeatureStructure, None, None]:
-    event_begin_token_index = char2token[event.begin]
-    event_end_token_index = char2token[event.end]
+    event_begin_token_index = begin2token[event.begin]
+    event_end_token_index = end2token[event.end]
     char_window_begin = token2char[event_begin_token_index][0]
     char_window_end = token2char[event_end_token_index][1]
 
@@ -258,10 +297,16 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         # document_creation_time = cas_source_data.getSourceOriginalDate()
 
         base_tokens, token_map = tokens_and_map(cas)
-        char2token = invert_map(token_map)
+        begin2token, end2token = invert_map(token_map)
+        # print("Base tokens")
+        # print(base_tokens)
+        # print("token map")
+        # print(token_map)
+        # print("inverse token map")
+        # print(char2token)
 
         dtr_instances = (
-            get_dtr_instance(chemo, base_tokens, char2token)
+            get_dtr_instance(chemo, base_tokens, begin2token, end2token)
             for chemo in positive_chemo_mentions
         )
 
@@ -274,10 +319,10 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
         def tlink_result_dict(event):
             window_timexes = get_window_mentions(
-                event, cas, timex_type, char2token, token_map
+                event, cas, timex_type, begin2token, end2token, token_map
             )
             tlink_instances = (
-                get_tlink_instance(event, w_timex, base_tokens, char2token)
+                get_tlink_instance(event, w_timex, base_tokens, begin2token, end2token)
                 for w_timex in window_timexes
             )
             return {
@@ -291,10 +336,10 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             chemo: tlink_result_dict(chemo) for chemo in positive_chemo_mentions
         }
 
-        document_path_collection = cas.select(ctakes_types.DocumentPath)
-        document_path = list(document_path_collection)[0]
-        patient_id = os.path.basename(os.path.dirname(document_path))
-
+        # document_path_collection = cas.select(ctakes_types.DocumentPath)
+        # document_path = list(document_path_collection)[0]
+        # patient_id = os.path.basename(os.path.dirname(document_path))
+        patient_id = "THE_DUD"
         for chemo in positive_chemo_mentions:
             chemo_dtr = dtr_classifications[chemo]
             for timex, chemo_timex_rel in tlink_classifications[chemo]:
@@ -318,4 +363,5 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             pt_df = pd.DataFrame.from_records(
                 records, columns=["DCT", "chemo_text", "dtr", "timex", "tlink"]
             )
+            print(pt_df)
             pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
