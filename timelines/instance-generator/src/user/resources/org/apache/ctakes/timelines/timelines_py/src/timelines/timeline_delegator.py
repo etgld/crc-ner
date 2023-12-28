@@ -1,10 +1,12 @@
 import os
 import logging
+import torch
 import pandas as pd
 
-from transformers import pipeline
+# from transformers import pipeline
+from transformers.pipelines import TextClassificationPipeline
+from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
 from ctakes_pbj.component import cas_annotator
-from ctakes_pbj.pbj_tools import create_type
 from ctakes_pbj.type_system import ctakes_types
 from typing import List, Tuple, Dict, Optional, Generator, Union
 from cassis.typesystem import (
@@ -24,7 +26,8 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-_window_radius = 10
+WINDOW_RADIUS = 10
+SPECIAL_TOKENS = ["<e>", "</e>", "<a1>", "</a1>", "<a2>", "</a2>", "<cr>", "<neg>"]
 
 
 def tokens_and_map(
@@ -34,7 +37,7 @@ def tokens_and_map(
     token_map = []
     newline_tokens = cas.select(ctakes_types.NewlineToken)
     newline_token_indices = {(item.begin, item.end) for item in newline_tokens}
-    duplicates = defaultdict(list)
+    # duplicates = defaultdict(list)
 
     raw_token_collection = (
         cas.select(ctakes_types.BaseToken)
@@ -46,12 +49,16 @@ def tokens_and_map(
     for base_token in raw_token_collection:
         begin = base_token.begin
         end = base_token.end
-        token_text = base_token.get_covered_text() if (begin, end) not in newline_token_indices else "<cr>"
-        if begin in token_collection:
-            prior_end, prior_text = token_collection[begin]
-            print(
-                f"WARNING: two tokens {(token_text, begin, end)} and {(prior_text, begin, prior_end)} overwriting with latest"
-            )
+        token_text = (
+            base_token.get_covered_text()
+            if (begin, end) not in newline_token_indices
+            else "<cr>"
+        )
+        # if begin in token_collection:
+        #     prior_end, prior_text = token_collection[begin]
+        #     print(
+        #         f"WARNING: two tokens {(token_text, begin, end)} and {(prior_text, begin, prior_end)} share the same begin index, overwriting with latest"
+        #     )
         token_collection[begin] = (end, token_text)
     for begin in sorted(token_collection):
         end, token_text = token_collection[begin]
@@ -104,7 +111,7 @@ def invert_map(
 
 
 def get_conmod_instance(event: FeatureStructure, cas: Cas) -> str:
-    raw_sentence = cas.select_covering(ctakes_types.Sentence, event)[0]
+    raw_sentence = list(cas.select_covering(ctakes_types.Sentence, event))[0]
     tokens, token_map = tokens_and_map(cas, raw_sentence)
     begin2token, end2token = invert_map(token_map)
     event_begin = begin2token[event.begin]
@@ -116,7 +123,9 @@ def get_conmod_instance(event: FeatureStructure, cas: Cas) -> str:
         + ["</e>"]
         + tokens[event_end:]
     )
-    return " ".join(str_builder)
+    result = " ".join(str_builder)
+    print(f"conmod result: {result}")
+    return result
 
 
 def get_tlink_instance(
@@ -146,7 +155,7 @@ def get_tlink_instance(
     str_builder = (
         # since the window is around the event,
         # from the beginning to the first mention
-        tokens[event_begin - _window_radius : first_begin]
+        tokens[event_begin - WINDOW_RADIUS : first_begin]
         # tag body of the first mention
         + [first_open_tag]
         + tokens[first_begin:first_end]
@@ -158,9 +167,11 @@ def get_tlink_instance(
         + tokens[second_begin:second_end]
         + [second_close_tag]
         # ending part of the window
-        + tokens[second_end : event_end + _window_radius]
+        + tokens[second_end : event_end + WINDOW_RADIUS]
     )
-    return " ".join(str_builder)
+    result = " ".join(str_builder)
+    print(f"tlink result: {result}")
+    return result
 
 
 def get_dtr_instance(
@@ -176,13 +187,15 @@ def get_dtr_instance(
     event_end = end2token[event.end] + 1
     # window_tokens = tokens[event_begin - window_radius:event_end + window_radius - 1]
     str_builder = (
-        tokens[event_begin - _window_radius : event_begin]
+        tokens[event_begin - WINDOW_RADIUS : event_begin]
         + ["<e>"]
         + tokens[event_begin:event_end]
         + ["</e>"]
-        + tokens[event_end : event_end + _window_radius]
+        + tokens[event_end : event_end + WINDOW_RADIUS]
     )
-    return " ".join(str_builder)
+    result = " ".join(str_builder)
+    print(f"dtr result: {result}")
+    return result
 
 
 def get_window_mentions(
@@ -204,6 +217,25 @@ def get_window_mentions(
     for mention in cas.select(mention_type):
         if in_window(mention.begin) and in_window(mention.end):
             yield mention
+
+
+def get_classifier(model_dir, main_device):
+    config = AutoConfig.from_pretrained(model_dir)
+
+    model = AutoModelForSequenceClassification.from_pretrained(
+        model_dir,
+        config=config,
+    )
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_dir, add_prefix_space=True, additional_special_tokens=SPECIAL_TOKENS
+    )
+
+    classifier = TextClassificationPipeline(
+        model=model, tokeizer=tokenizer, device=main_device
+    )
+
+    return classifier
 
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
@@ -243,19 +275,31 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
     def initialize(self):
         print("In inititalize")
-        self.dtr_classifier = pipeline(
-            "text-classification", model=self._dtr_path, tokenizer=self._dtr_path
-        )
+
+        if torch.cuda.is_available():
+            main_device = 0
+            print("GPU with CUDA is available, using GPU")
+        else:
+            main_device = -1
+            print("GPU with CUDA is not available, defaulting to CPU")
+        # self.dtr_classifier = pipeline(
+        #     "text-classification", model=self._dtr_path, tokenizer=self._dtr_path
+        # )
+        self.dtr_classifier = get_classifier(self._dtr_path, main_device)
 
         print("DTR classifier loaded")
-        self.tlink_classifier = pipeline(
-            "text-classification", model=self._tlink_path, tokenizer=self._tlink_path
-        )
+        # self.tlink_classifier = pipeline(
+        #     "text-classification", model=self._tlink_path, tokenizer=self._tlink_path
+        # )
+
+        self.tlink_classifier = get_classifier(self._tlink_path, main_device)
 
         print("TLINK classifier loaded")
-        self.conmod_classifier = pipeline(
-            "text-classification", model=self._conmod_path, tokenizer=self._conmod_path
-        )
+        # self.conmod_classifier = pipeline(
+        #     "text-classification", model=self._conmod_path, tokenizer=self._conmod_path
+        # )
+
+        self.conmod_classifier = get_classifier(self._conmod_path, main_device)
 
         print("Conmod classifier loaded")
 
@@ -269,9 +313,17 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
     def process(self, cas: Cas):
         print("Processing CAS")
         # TODO - will need CUI-based filtering later
-        self.write_raw_timelines(
-            cas, cas.select(cas.typesystem.get_type(ctakes_types.EventMention))
-        )
+        chemos = cas.select(cas.typesystem.get_type(ctakes_types.EventMention))
+        if len(chemos) > 0:
+            self.write_raw_timelines(cas, chemos)
+        else:
+            document_path_collection = cas.select(ctakes_types.DocumentPath)
+            document_path = list(document_path_collection)[0].documentPath
+            patient_id = os.path.basename(os.path.dirname(document_path))
+            note_name = os.path.basename(document_path).split(".")[0]
+            print(
+                f"No chemotherapy mentions found in patient {patient_id} note {note_name} skipping"
+            )
 
     def write_raw_timelines(self, cas: Cas, chemo_mentions):
         print("in write_raw_timelines")
@@ -280,18 +332,25 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             result["label"]
             for result in filter(None, self.conmod_classifier(conmod_instances))
         )
-        positive_chemo_mentions = (
+        positive_chemo_mentions = [
             chemo
             for chemo, modality in zip(chemo_mentions, conmod_classifications)
             if modality == "ACTUAL"
-        )
-
-        self._write_positive_chemo_mentions(cas, positive_chemo_mentions)
+        ]
+        if len(positive_chemo_mentions) > 0:
+            self._write_positive_chemo_mentions(cas, positive_chemo_mentions)
+        else:
+            document_path_collection = cas.select(ctakes_types.DocumentPath)
+            document_path = list(document_path_collection)[0].documentPath
+            patient_id = os.path.basename(os.path.dirname(document_path))
+            note_name = os.path.basename(document_path).split(".")[0]
+            print(
+                f"No concrete chemotherapy mentions found in patient {patient_id} note {note_name} skipping"
+            )
 
     def _write_positive_chemo_mentions(self, cas, positive_chemo_mentions):
         print("in _write_positive_chemo_mentions")
         timex_type = cas.typesystem.get_type(ctakes_types.TimeMention)
-        print(cas.select(ctakes_types.Metadata)[0])
         cas_source_data = cas.select(ctakes_types.Metadata)[0].sourceData
         # in its normalized string form, maybe need some exceptions
         # for if it's missing describing the file spec
@@ -340,19 +399,28 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         document_path_collection = cas.select(ctakes_types.DocumentPath)
         document_path = list(document_path_collection)[0].documentPath
         patient_id = os.path.basename(os.path.dirname(document_path))
+        note_name = os.path.basename(document_path).split(".")[0]
         # patient_id = "THE_DUD"
+        timexes = cas.select(timex_type)
+        if len(timexes) == 0:
+            print(f"WARNING: No timexes discovered in {patient_id} {note_name} verify")
+        else:
+            print([timex.get_covered_text() for timex in timexes])
         for chemo in positive_chemo_mentions:
+            chemo_text = (chemo.get_covered_text() if chemo is not None else "ERROR",)
             chemo_dtr = dtr_classifications[chemo]
+            print(f"chemo: {chemo_text}, DTR: {chemo_dtr}")
             for timex, chemo_timex_rel in tlink_classifications[chemo]:
-                self.raw_events[patient_id].append(
-                    [
-                        document_creation_time,
-                        chemo.get_covered_text() if chemo is not None else "ERROR",
-                        chemo_dtr,
-                        timex.get_covered_text() if timex is not None else "ERROR",
-                        chemo_timex_rel,
-                    ]
-                )
+                instance = [
+                    document_creation_time,
+                    chemo_text,
+                    chemo_dtr,
+                    timex.get_covered_text() if timex is not None else "ERROR",
+                    chemo_timex_rel,
+                    note_name,
+                ]
+                print(instance)
+                self.raw_events[patient_id].append(instance)
 
     def collection_process_complete(self):
         print("In collection_process_complete")
@@ -362,7 +430,8 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         # to tsv
         for pt_id, records in self.raw_events.items():
             pt_df = pd.DataFrame.from_records(
-                records, columns=["DCT", "chemo_text", "dtr", "timex", "tlink"]
+                records,
+                columns=["DCT", "chemo_text", "dtr", "timex", "tlink", "note_name"],
             )
             print(pt_df)
             pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")

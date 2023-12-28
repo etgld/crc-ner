@@ -74,18 +74,21 @@ add PythonRunner Command="-m pip install resources/org/apache/ctakes/timelines/t
 
 set TimelinesSecondStep=timelines.timelines_pipeline
 
-add PythonRunner Command="-m $TimelinesSecondStep -rq JavaToPy -o $OutputDirectory --dtr_path $DTRModelPath --conmod_path $ModalityModelPath --tlink_path $TlinkModelPath"
 set minimumSpan=2
 set exclusionTags=“”
 
-load DictionarySubPipe
 // Pitt sentencing and tokenization
 add SegmentsFromBracketedSectionTagsAnnotator
 add SentenceDetectorAnnotatorBIO classifierJarPath=/org/apache/ctakes/core/models/sentdetect/model.jar
 add TokenizerAnnotatorPTB
 
+// Dictionary module requires tokens so needs to be loaded after the tokenization stack
+load DictionarySubPipe
+
 add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
 add DCTAnnotator
+
+add PythonRunner Command="-m $TimelinesSecondStep -rq JavaToPy -o $OutputDirectory --dtr_path $DTRModelPath --conmod_path $ModalityModelPath --tlink_path $TlinkModelPath"
 
 add PbjJmsSender SendQueue=JavaToPy SendStop=yes
 

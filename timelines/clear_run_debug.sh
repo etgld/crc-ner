@@ -37,7 +37,7 @@ mvn clean package;
 java -cp instance-generator/target/instance-generator-5.0.0-SNAPSHOT-jar-with-dependencies.jar \
      org.apache.ctakes.core.pipeline.PiperFileRunner \
      -p org/apache/ctakes/timelines/pipeline/Timelines \
-     -a  ~/apache-artemis-2.19.1/bin/rt_broker \
+     -a  mybroker \
      -v /usr/local/miniconda3/envs/timelines-docker \
      -i ../input/ \
      -o ../output \
