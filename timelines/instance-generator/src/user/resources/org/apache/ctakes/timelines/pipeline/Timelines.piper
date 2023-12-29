@@ -82,11 +82,15 @@ add SegmentsFromBracketedSectionTagsAnnotator
 add SentenceDetectorAnnotatorBIO classifierJarPath=/org/apache/ctakes/core/models/sentdetect/model.jar
 add TokenizerAnnotatorPTB
 
-// Dictionary module requires tokens so needs to be loaded after the tokenization stack
-load DictionarySubPipe
+// since the time annotation is out of wack
+add ContextDependentTokenizerAnnotator
 
 add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
 add DCTAnnotator
+
+// Dictionary module requires tokens so needs to be loaded after the tokenization stack
+load DictionarySubPipe
+
 
 add PythonRunner Command="-m $TimelinesSecondStep -rq JavaToPy -o $OutputDirectory --dtr_path $DTRModelPath --conmod_path $ModalityModelPath --tlink_path $TlinkModelPath"
 
