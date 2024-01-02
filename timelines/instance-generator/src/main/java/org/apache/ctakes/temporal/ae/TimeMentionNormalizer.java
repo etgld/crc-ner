@@ -1,5 +1,6 @@
 package org.apache.ctakes.temporal.ae;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.ctakes.core.cc.AbstractJCasFileWriter;
 import org.apache.ctakes.core.pipeline.PipeBitInfo;
 import org.apache.ctakes.core.util.annotation.IdentifiedAnnotationUtil;
@@ -10,10 +11,13 @@ import org.apache.ctakes.typesystem.type.refsem.Event;
 import org.apache.ctakes.typesystem.type.refsem.EventProperties;
 import org.apache.ctakes.typesystem.type.refsem.UmlsConcept;
 import org.apache.ctakes.typesystem.type.structured.SourceData;
+import org.apache.ctakes.typesystem.type.structured.DocumentPath;
 import org.apache.ctakes.typesystem.type.textsem.EventMention;
 import org.apache.ctakes.typesystem.type.textsem.IdentifiedAnnotation;
 import org.apache.ctakes.typesystem.type.textsem.MedicationMention;
 import org.apache.ctakes.typesystem.type.textsem.TimeMention;
+// import org.apache.ctakes.typesystem.type.refsem.Date;
+import org.apache.ctakes.typesystem.type.refsem.Time;
 import org.apache.ctakes.typesystem.type.structured.SourceData;
 import org.apache.log4j.Logger;
 import org.apache.uima.fit.descriptor.ConfigurationParameter;
@@ -24,29 +28,14 @@ import org.clulab.timenorm.scfg.TemporalExpressionParser;
 import org.clulab.timenorm.scfg.TimeSpan;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import java.io.File;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
+import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static org.apache.ctakes.core.pipeline.PipeBitInfo.TypeProduct.BASE_TOKEN;
-import static org.apache.ctakes.core.pipeline.PipeBitInfo.TypeProduct.DOCUMENT_ID_PREFIX;
 
-@PipeBitInfo(
-        name = "Event Time Anafora Writer",
-        description = "Writes Temporal Events and Times in Anafora format.",
-)
+// @PipeBitInfo(
+//         name = "Event Time Anafora Writer",
+//         description = "Writes Temporal Events and Times in Anafora format."
+// )
 
 public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnnotator_ImplBase {
     final static private Logger LOGGER = Logger.getLogger( "TimeMentionNormalizer" );
@@ -54,15 +43,45 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
     @Override
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
         final SourceData sourceData = SourceMetadataUtil.getOrCreateSourceData( jCas );
-        final String DCT = sourceData.getSourceOriginalDate();
+        final String docTime = sourceData.getSourceOriginalDate();
+        
+        TimeSpan _DCT = null;
+        
+        
+        if ( docTime == null || docTime.isEmpty() ){
+            LOGGER.warn( "Empty DCT, not creating the node" );
+        } else {
+            String[] docTimeComponents = docTime.split("-");
+            
+            
+            // properly generated
+            if (docTimeComponents.length == 3) {
+                _DCT = TimeSpan.of(
+                                  Integer.parseInt(docTimeComponents[0]),
+                                  Integer.parseInt(docTimeComponents[1]),
+                                  Integer.parseInt(docTimeComponents[2]));
+            } else {
+                // DocTimeApproximator generated
+                _DCT = TimeSpan.of(
+                                  Integer.parseInt(docTime.substring(0, 4)),
+                                  Integer.parseInt(docTime.substring(4, 6)),
+                                  Integer.parseInt(docTime.substring(6, 8)));
+            }
+        }
+        final TimeSpan DCT = _DCT;
         DocumentPath documentPath = JCasUtil.select( jCas, DocumentPath.class ).iterator().next();
-        String fileName = FilenameUtils.getBaseName( documentPath.getDocumentPath() );
-        JCasUtil.select( jCas, TimeMention.class ).forEach(
-            t -> normalize( DCT, fileName, t )
-        )
+        final String fileName = FilenameUtils.getBaseName( documentPath.getDocumentPath() );
+        // JCasUtil.select( jCas, TimeMention.class ).forEach(
+        //     t -> normalize( DCT, fileName, t )
+        // );
+        Collection<TimeMention> timeMentions = JCasUtil.select( jCas, TimeMention.class );
+
+        for ( TimeMention timeMention : timeMentions){
+            normalize( jCas, DCT, fileName, timeMention );
+        }
     }
 
-    private void normalize( String DCT, String fileName, TimeMention timeMention ){
+    private void normalize( JCas jCas, TimeSpan DCT, String fileName, TimeMention timeMention ){
         String typeName = "";
         String unnormalizedTimex = timeMention.getCoveredText();
         Temporal normalizedTimex = null;
@@ -73,7 +92,18 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
             // setting this in date due since breaking the
             // parts up of the temporal mention is too weird at the moment
             // and generally we're just using the date anyway
-            timeMention.setDate( normalizedTimex.timeMLValue() )
+            // timeMention.setDate( normalizedTimex.timeMLValue() );
+            // Time _placeHolder = new Time();
+            // _placeHolder.setNormalizedForm( normalizedTimex );
+            // _placeHolder.addToIndexes();
+            // timeMention.setTime( _placeHolder );
+            Time time = timeMention.getTime();
+            if (time == null){
+                time = new Time( jCas );
+                time.addToIndexes();
+                timeMention.setTime( time );
+            }
+            time.setNormalizedForm( normalizedTimex.timeMLValue() );
         } else {
             LOGGER.warn( fileName + "resorting to unnormalized timex: " + unnormalizedTimex );
         }

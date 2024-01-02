@@ -368,12 +368,15 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                     chemo.get_covered_text() if chemo is not None else "ERROR",
                     chemo_dtr,
                     # timex.get_covered_text() if timex is not None else "ERROR",
-                    timex.Date if timex is not None else "ERROR", # now that we're using the normalized date
+                    timex.time.normalizedForm
+                    if timex is not None
+                    else "ERROR",  # now that we're using the normalized date
                     chemo_timex_rel,
                     note_name,
                 ]
                 print(instance)
                 self.raw_events[patient_id].append(instance)
+                print(self.raw_events[patient_id])
 
     def collection_process_complete(self):
         # Per 12/6/23 meeting, summarization is done
@@ -381,9 +384,11 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         # to customize everything.  So we just write the raw results
         # to tsv
         for pt_id, records in self.raw_events.items():
+            print(f"writing {pt_id}")
             pt_df = pd.DataFrame.from_records(
                 records,
                 columns=["DCT", "chemo_text", "dtr", "timex", "tlink", "note_name"],
             )
             print(pt_df)
+            print(f"writing in {os.getcwd()}")
             pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
