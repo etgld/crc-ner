@@ -367,7 +367,8 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                     document_creation_time,
                     chemo.get_covered_text() if chemo is not None else "ERROR",
                     chemo_dtr,
-                    timex.get_covered_text() if timex is not None else "ERROR",
+                    # timex.get_covered_text() if timex is not None else "ERROR",
+                    timex.Date if timex is not None else "ERROR", # now that we're using the normalized date
                     chemo_timex_rel,
                     note_name,
                 ]
