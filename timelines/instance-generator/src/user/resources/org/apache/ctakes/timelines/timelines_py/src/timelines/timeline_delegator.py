@@ -27,6 +27,8 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 WINDOW_RADIUS = 10
+MAX_TLINK_DISTANCE = 60
+TLINK_PAD_LENGTH = 2
 MODEL_MAX_LEN = 512
 SPECIAL_TOKENS = ["<e>", "</e>", "<a1>", "</a1>", "<a2>", "</a2>", "<cr>", "<neg>"]
 
@@ -120,6 +122,10 @@ def get_tlink_instance(
     begin2token: Dict[int, int],
     end2token: Dict[int, int],
 ) -> str:
+    # Have an event and a timex which are up to 60 tokens apart from each other
+    # have two tokens before first annotation, first annotation plus tags
+    # then all the text between the two annotations
+    # second annotation plus tags, the last two tokens after the second annotation
     event_begin = begin2token[event.begin]
     event_end = end2token[event.end] + 1
     event_tags = ("<e>", "</e>")
@@ -137,10 +143,14 @@ def get_tlink_instance(
 
     (second_begin, second_end, second_tags) = second_packet
     (second_open_tag, second_close_tag) = second_tags
+
+    # to avoid wrap arounds
+    start_token_idx = max(0, first_begin - TLINK_PAD_LENGTH)
+    end_token_idx = min(len(tokens) - 1, second_end + TLINK_PAD_LENGTH)
+
     str_builder = (
-        # since the window is around the event,
-        # from the beginning to the first mention
-        tokens[event_begin - WINDOW_RADIUS : first_begin]
+        # first two tokens
+        tokens[start_token_idx:first_begin]
         # tag body of the first mention
         + [first_open_tag]
         + tokens[first_begin:first_end]
@@ -152,7 +162,7 @@ def get_tlink_instance(
         + tokens[second_begin:second_end]
         + [second_close_tag]
         # ending part of the window
-        + tokens[second_end : event_end + WINDOW_RADIUS]
+        + tokens[second_end:end_token_idx]
     )
     result = " ".join(str_builder)
     print(f"tlink result: {result}")
@@ -182,7 +192,7 @@ def get_dtr_instance(
     return result
 
 
-def get_window_mentions(
+def get_tlink_window_mentions(
     event: FeatureStructure,
     cas: Cas,
     mention_type: Union[Type, str],
@@ -192,8 +202,8 @@ def get_window_mentions(
 ) -> List[FeatureStructure]:
     event_begin_token_index = begin2token[event.begin]
     event_end_token_index = end2token[event.end]
-    char_window_begin = token2char[event_begin_token_index - WINDOW_RADIUS][0]
-    char_window_end = token2char[event_end_token_index + WINDOW_RADIUS][1]
+    char_window_begin = token2char[event_begin_token_index - MAX_TLINK_DISTANCE][0]
+    char_window_end = token2char[event_end_token_index + MAX_TLINK_DISTANCE][1]
 
     def in_window(mention):
         begin_inside = char_window_begin <= mention.begin <= char_window_end
