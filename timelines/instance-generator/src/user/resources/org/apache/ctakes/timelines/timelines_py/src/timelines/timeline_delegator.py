@@ -26,7 +26,7 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-WINDOW_RADIUS = 10
+DTR_WINDOW_RADIUS = 10
 MAX_TLINK_DISTANCE = 60
 TLINK_PAD_LENGTH = 2
 MODEL_MAX_LEN = 512
@@ -57,6 +57,7 @@ def tokens_and_map(
             if (begin, end) not in newline_token_indices
             else "<cr>"
         )
+        # TODO - ask Sean and Guergana why there might be duplicate Newline tokens
         # if begin in token_collection:
         #     prior_end, prior_text = token_collection[begin]
         #     print(
@@ -78,6 +79,9 @@ def invert_map(
     end_map: Dict[int, int] = {}
     for token_index, token_boundaries in enumerate(token_map):
         begin, end = token_boundaries
+        # these warnings are kind of by-passed by previous logic
+        # since any time two tokens shared a begin and or an end
+        # it was always a newline token and its exact duplicate
         if begin in begin_map:
             print(
                 f"pre-existing token begin entry {begin} -> {begin_map[begin]} against {token_index} in reverse token map"
@@ -182,11 +186,11 @@ def get_dtr_instance(
     event_end = end2token[event.end] + 1
     # window_tokens = tokens[event_begin - window_radius:event_end + window_radius - 1]
     str_builder = (
-        tokens[event_begin - WINDOW_RADIUS : event_begin]
+        tokens[event_begin - DTR_WINDOW_RADIUS : event_begin]
         + ["<e>"]
         + tokens[event_begin:event_end]
         + ["</e>"]
-        + tokens[event_end : event_end + WINDOW_RADIUS]
+        + tokens[event_end : event_end + DTR_WINDOW_RADIUS]
     )
     result = " ".join(str_builder)
     return result
@@ -339,7 +343,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         }
 
         def tlink_result_dict(event: FeatureStructure) -> Dict[FeatureStructure, str]:
-            window_timexes = get_window_mentions(
+            window_timexes = get_tlink_window_mentions(
                 event, cas, timex_type, begin2token, end2token, token_map
             )
             # print(
