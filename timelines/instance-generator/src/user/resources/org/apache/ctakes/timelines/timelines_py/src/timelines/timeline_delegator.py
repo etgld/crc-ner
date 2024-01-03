@@ -2,6 +2,7 @@ import os
 import logging
 import torch
 import pandas as pd
+from pprint import pprint
 
 # from transformers import pipeline
 from transformers import pipeline
@@ -154,6 +155,7 @@ def get_tlink_instance(
         + tokens[second_end : event_end + WINDOW_RADIUS]
     )
     result = " ".join(str_builder)
+    print(f"tlink result: {result}")
     return result
 
 
@@ -217,7 +219,6 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         self._conmod_path = arg_parser.conmod_path
 
     def initialize(self):
-
         if torch.cuda.is_available():
             main_device = 0
             print("GPU with CUDA is available, using GPU")
@@ -228,7 +229,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             "text-classification",
             model=self._dtr_path,
             tokenizer=self._dtr_path,
-            device=main_device,
+            device=main_device,  # here and for the rest we specify the device since pipelines default to CPU
             padding=True,
             truncation=True,
             max_length=MODEL_MAX_LEN,
@@ -363,22 +364,39 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             # chemo_text = (chemo.get_covered_text() if chemo is not None else "ERROR",)
             chemo_dtr = dtr_classifications[chemo]
             for timex, chemo_timex_rel in tlink_classifications[chemo].items():
+                timex_text = timex.get_covered_text() if timex is not None else "ERROR"
+                if hasattr(timex, "time"):
+                    if hasattr(timex.time, "normalizedForm"):
+                        timex_text = timex.time.normalizedForm
+                #         print(
+                #             f"SUCCESS: timex {timex.get_covered_text()} normalized to {timex_text}"
+                #         )
+                #     else:
+                #         print(
+                #             f"ERROR: timex {timex} with text {timex_text} has time attr {timex.time} but no normalizedForm attr"
+                #         )
+                #         # pprint(vars(timex))
+                # else:
+                #     print(f"ERROR: timex {timex} with text {timex_text} unnormalized")
+                #     # pprint(vars(timex))
                 instance = [
                     document_creation_time,
                     chemo.get_covered_text() if chemo is not None else "ERROR",
                     chemo_dtr,
                     # timex.get_covered_text() if timex is not None else "ERROR",
-                    timex.time.normalizedForm
-                    if timex is not None
-                    else "ERROR",  # now that we're using the normalized date
+                    # timex.time.normalizedForm
+                    # if timex is not None
+                    # else "ERROR",  # now that we're using the normalized date
+                    timex_text,
                     chemo_timex_rel,
                     note_name,
                 ]
-                print(instance)
+                # print(instance)
                 self.raw_events[patient_id].append(instance)
-                print(self.raw_events[patient_id])
+                # print(self.raw_events[patient_id])
 
     def collection_process_complete(self):
+        print("in collection_process_complete")
         # Per 12/6/23 meeting, summarization is done
         # outside the Docker to maximize the ability for the user
         # to customize everything.  So we just write the raw results

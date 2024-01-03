@@ -44,12 +44,14 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
         final SourceData sourceData = SourceMetadataUtil.getOrCreateSourceData( jCas );
         final String docTime = sourceData.getSourceOriginalDate();
+        DocumentPath documentPath = JCasUtil.select( jCas, DocumentPath.class ).iterator().next();
+        final String fileName = FilenameUtils.getBaseName( documentPath.getDocumentPath() );
         
         TimeSpan _DCT = null;
         
         
         if ( docTime == null || docTime.isEmpty() ){
-            LOGGER.warn( "Empty DCT, not creating the node" );
+            LOGGER.warn( "Empty DCT for file " + fileName );
         } else {
             String[] docTimeComponents = docTime.split("-");
             
@@ -69,8 +71,6 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
             }
         }
         final TimeSpan DCT = _DCT;
-        DocumentPath documentPath = JCasUtil.select( jCas, DocumentPath.class ).iterator().next();
-        final String fileName = FilenameUtils.getBaseName( documentPath.getDocumentPath() );
         // JCasUtil.select( jCas, TimeMention.class ).forEach(
         //     t -> normalize( DCT, fileName, t )
         // );
@@ -85,6 +85,8 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
         String typeName = "";
         String unnormalizedTimex = timeMention.getCoveredText();
         Temporal normalizedTimex = null;
+        int begin = timeMention.getBegin();
+        int end = timeMention.getEnd();
         try{
             normalizedTimex = normalizer.parse( unnormalizedTimex, DCT ).get();
         } catch (Exception ignored){}
@@ -101,11 +103,13 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
             if (time == null){
                 time = new Time( jCas );
                 time.addToIndexes();
-                timeMention.setTime( time );
             }
             time.setNormalizedForm( normalizedTimex.timeMLValue() );
-        } else {
-            LOGGER.warn( fileName + "resorting to unnormalized timex: " + unnormalizedTimex );
+            timeMention.setTime( time );
+            // LOGGER.info( fileName + ": timex " + timeMention.getCoveredText() + " normalized to " + timeMention.getTime().getNormalizedForm() );
         }
+        // else {
+        //     LOGGER.warn( fileName + ": resorting to unnormalized timex: " + unnormalizedTimex );
+        // }
     }
 }
