@@ -4,7 +4,7 @@ import torch
 import pandas as pd
 from pprint import pprint
 
-# from transformers import pipeline
+from itertools import chain
 from transformers import pipeline
 from ctakes_pbj.component import cas_annotator
 from ctakes_pbj.type_system import ctakes_types
@@ -199,11 +199,11 @@ def get_dtr_instance(
 def get_tlink_window_mentions(
     event: FeatureStructure,
     cas: Cas,
-    mention_type: Union[Type, str],
+    mention_types: List[Union[Type, str]],
     begin2token: Dict[int, int],
     end2token: Dict[int, int],
     token2char: List[Tuple[int, int]],
-) -> List[FeatureStructure]:
+) -> Generator[FeatureStructure, None, None]:
     event_begin_token_index = begin2token[event.begin]
     event_end_token_index = end2token[event.end]
 
@@ -218,7 +218,13 @@ def get_tlink_window_mentions(
         end_inside = char_window_begin <= mention.end <= char_window_end
         return begin_inside and end_inside
 
-    return [mention for mention in cas.select(mention_type) if in_window(mention)]
+    # return [mention for mention in cas.select(mention_type) if in_window(mention)]
+
+    cas_grab = (cas.select(mention_type) for mention_type in mention_types)
+
+    for mention in chain.from_iterable(cas_grab):
+        if in_window(mention):
+            yield mention
 
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
@@ -356,10 +362,10 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             # print(
             #     f"window for event {get_dtr_instance(event, base_tokens, begin2token, end2token)}"
             # )
-            tlink_instances = [
+            tlink_instances = (
                 get_tlink_instance(event, w_timex, base_tokens, begin2token, end2token)
                 for w_timex in window_timexes
-            ]
+            )
             return {
                 w_timex: result["label"]
                 for w_timex, result in zip(
