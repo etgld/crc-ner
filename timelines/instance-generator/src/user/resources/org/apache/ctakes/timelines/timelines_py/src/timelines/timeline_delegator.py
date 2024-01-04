@@ -382,7 +382,17 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             # chemo_text = (chemo.get_covered_text() if chemo is not None else "ERROR",)
             chemo_dtr = dtr_classifications[chemo]
             for timex, chemo_timex_rel in tlink_classifications[chemo].items():
-                timex_text = timex.get_covered_text() if timex is not None else "ERROR"
+                timex_text = (
+                    timex.get_covered_text().replace("\\r\\n", "")
+                    if timex is not None
+                    else "ERROR"
+                )
+                chemo_text = (
+                    chemo.get_covered_text().replace("\\r\\n", "")
+                    if chemo is not None
+                    else "ERROR",
+                )
+
                 if hasattr(timex, "time"):
                     if hasattr(timex.time, "normalizedForm"):
                         timex_text = timex.time.normalizedForm
@@ -399,7 +409,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 #     # pprint(vars(timex))
                 instance = [
                     document_creation_time,
-                    chemo.get_covered_text() if chemo is not None else "ERROR",
+                    chemo_text,
                     chemo_dtr,
                     # timex.get_covered_text() if timex is not None else "ERROR",
                     # timex.time.normalizedForm
