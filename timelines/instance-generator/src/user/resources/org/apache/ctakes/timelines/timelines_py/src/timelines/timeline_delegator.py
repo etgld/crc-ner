@@ -169,7 +169,7 @@ def get_tlink_instance(
         + tokens[second_end:end_token_idx]
     )
     result = " ".join(str_builder)
-    print(f"tlink result: {result}")
+    # print(f"tlink result: {result}")
     return result
 
 
@@ -206,8 +206,12 @@ def get_tlink_window_mentions(
 ) -> List[FeatureStructure]:
     event_begin_token_index = begin2token[event.begin]
     event_end_token_index = end2token[event.end]
-    char_window_begin = token2char[event_begin_token_index - MAX_TLINK_DISTANCE][0]
-    char_window_end = token2char[event_end_token_index + MAX_TLINK_DISTANCE][1]
+
+    token_idk_begin = max(0, event_begin_token_index - MAX_TLINK_DISTANCE)
+    token_idk_end = min(len(token2char) - 1, event_end_token_index + MAX_TLINK_DISTANCE)
+
+    char_window_begin = token2char[token_idk_begin][0]
+    char_window_end = token2char[token_idk_end][1]
 
     def in_window(mention):
         begin_inside = char_window_begin <= mention.begin <= char_window_end

@@ -1,7 +1,5 @@
 package org.apache.ctakes.timelines
 
-
-
 set SetJavaHome=no
 set ForceExit=no
 cli DTRModelPath=d
