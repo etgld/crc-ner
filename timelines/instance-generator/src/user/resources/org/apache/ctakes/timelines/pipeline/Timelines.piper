@@ -38,7 +38,8 @@ add TimeMentionNormalizer
 // Dictionary module requires tokens so needs to be loaded after the tokenization stack
 load DictionarySubPipe
 
-add PbjJmsSender SendQueue=JavaToPy SendStop=no
+// add PbjJmsSender SendQueue=JavaToPy SendStop=no
+add PbjJmsSender SendQueue=JavaToPy SendStop=yes
 
 // add PbjReceiverAE ReceiveQueue=PyToJava
 
