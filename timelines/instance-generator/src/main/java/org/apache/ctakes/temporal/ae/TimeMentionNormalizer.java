@@ -83,7 +83,7 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
 
     private void normalize( JCas jCas, TimeSpan DCT, String fileName, TimeMention timeMention ){
         String typeName = "";
-        String unnormalizedTimex = timeMention.getCoveredText();
+        String unnormalizedTimex = String.join(" ", timeMention.getCoveredText().split("\\s"));
         Temporal normalizedTimex = null;
         int begin = timeMention.getBegin();
         int end = timeMention.getEnd();

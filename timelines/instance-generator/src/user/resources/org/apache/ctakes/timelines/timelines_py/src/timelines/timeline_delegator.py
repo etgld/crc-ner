@@ -4,7 +4,7 @@ import torch
 import pandas as pd
 from pprint import pprint
 
-# from transformers import pipeline
+from itertools import chain
 from transformers import pipeline
 from ctakes_pbj.component import cas_annotator
 from ctakes_pbj.type_system import ctakes_types
@@ -169,7 +169,7 @@ def get_tlink_instance(
         + tokens[second_end:end_token_idx]
     )
     result = " ".join(str_builder)
-    print(f"tlink result: {result}")
+    # print(f"tlink result: {result}")
     return result
 
 
@@ -199,22 +199,32 @@ def get_dtr_instance(
 def get_tlink_window_mentions(
     event: FeatureStructure,
     cas: Cas,
-    mention_type: Union[Type, str],
+    mention_types: List[Union[Type, str]],
     begin2token: Dict[int, int],
     end2token: Dict[int, int],
     token2char: List[Tuple[int, int]],
-) -> List[FeatureStructure]:
+) -> Generator[FeatureStructure, None, None]:
     event_begin_token_index = begin2token[event.begin]
     event_end_token_index = end2token[event.end]
-    char_window_begin = token2char[event_begin_token_index - MAX_TLINK_DISTANCE][0]
-    char_window_end = token2char[event_end_token_index + MAX_TLINK_DISTANCE][1]
+
+    token_idk_begin = max(0, event_begin_token_index - MAX_TLINK_DISTANCE)
+    token_idk_end = min(len(token2char) - 1, event_end_token_index + MAX_TLINK_DISTANCE)
+
+    char_window_begin = token2char[token_idk_begin][0]
+    char_window_end = token2char[token_idk_end][1]
 
     def in_window(mention):
         begin_inside = char_window_begin <= mention.begin <= char_window_end
         end_inside = char_window_begin <= mention.end <= char_window_end
         return begin_inside and end_inside
 
-    return [mention for mention in cas.select(mention_type) if in_window(mention)]
+    # return [mention for mention in cas.select(mention_type) if in_window(mention)]
+
+    cas_grab = (cas.select(mention_type) for mention_type in mention_types)
+
+    for mention in chain.from_iterable(cas_grab):
+        if in_window(mention):
+            yield mention
 
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
@@ -352,10 +362,10 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             # print(
             #     f"window for event {get_dtr_instance(event, base_tokens, begin2token, end2token)}"
             # )
-            tlink_instances = [
+            tlink_instances = (
                 get_tlink_instance(event, w_timex, base_tokens, begin2token, end2token)
                 for w_timex in window_timexes
-            ]
+            )
             return {
                 w_timex: result["label"]
                 for w_timex, result in zip(
@@ -378,7 +388,17 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             # chemo_text = (chemo.get_covered_text() if chemo is not None else "ERROR",)
             chemo_dtr = dtr_classifications[chemo]
             for timex, chemo_timex_rel in tlink_classifications[chemo].items():
-                timex_text = timex.get_covered_text() if timex is not None else "ERROR"
+                timex_text = (
+                    timex.get_covered_text().replace("\\r\\n", "")
+                    if timex is not None
+                    else "ERROR"
+                )
+                chemo_text = (
+                    chemo.get_covered_text().replace("\\r\\n", "")
+                    if chemo is not None
+                    else "ERROR",
+                )
+
                 if hasattr(timex, "time"):
                     if hasattr(timex.time, "normalizedForm"):
                         timex_text = timex.time.normalizedForm
@@ -395,7 +415,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 #     # pprint(vars(timex))
                 instance = [
                     document_creation_time,
-                    chemo.get_covered_text() if chemo is not None else "ERROR",
+                    chemo_text,
                     chemo_dtr,
                     # timex.get_covered_text() if timex is not None else "ERROR",
                     # timex.time.normalizedForm
