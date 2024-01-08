@@ -294,6 +294,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
     def process(self, cas: Cas):
         # TODO - will need TUI-based filtering later - T61
         chemos = cas.select(cas.typesystem.get_type(ctakes_types.EventMention))
+        # chemos = []
         if len(chemos) > 0:
             self.write_raw_timelines(cas, chemos)
         else:
@@ -354,7 +355,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
         def tlink_result_dict(event: FeatureStructure) -> Dict[FeatureStructure, str]:
             window_timexes = get_tlink_window_mentions(
-                event, cas, timex_type, begin2token, end2token, token_map
+                event, cas, [timex_type], begin2token, end2token, token_map
             )
             # print(
             #     f"timexes in window at event {event.get_covered_text()}: {[w.get_covered_text() for w in window_timexes]}"
