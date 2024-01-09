@@ -31,31 +31,34 @@ import org.w3c.dom.Element;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import java.util.*;
 
-
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import me.tongfei.progressbar.*;
+import com.google.common.util.concurrent.TimeLimiter;
+import com.google.common.util.concurrent.SimpleTimeLimiter;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 // @PipeBitInfo(
 //         name = "Event Time Anafora Writer",
 //         description = "Writes Temporal Events and Times in Anafora format."
 // )
 
 public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnnotator_ImplBase {
-    final static private Logger LOGGER = Logger.getLogger( "TimeMentionNormalizer" );
+    static private final Logger LOGGER = Logger.getLogger( "TimeMentionNormalizer" );
     static private final TemporalExpressionParser normalizer = TemporalExpressionParser.en();
+    static private final TimeLimiter timeLimiter = SimpleTimeLimiter.create(Executors.newSingleThreadExecutor());
     @Override
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
         final SourceData sourceData = SourceMetadataUtil.getOrCreateSourceData( jCas );
         final String docTime = sourceData.getSourceOriginalDate();
         DocumentPath documentPath = JCasUtil.select( jCas, DocumentPath.class ).iterator().next();
         final String fileName = FilenameUtils.getBaseName( documentPath.getDocumentPath() );
-        
         TimeSpan _DCT = null;
-        
-        
         if ( docTime == null || docTime.isEmpty() ){
             LOGGER.warn( "Empty DCT for file " + fileName );
         } else {
             String[] docTimeComponents = docTime.split("-");
-            
-            
             // properly generated
             if (docTimeComponents.length == 3) {
                 _DCT = TimeSpan.of(
@@ -74,14 +77,27 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
         // JCasUtil.select( jCas, TimeMention.class ).forEach(
         //     t -> normalize( DCT, fileName, t )
         // );
-        Collection<TimeMention> timeMentions = JCasUtil.select( jCas, TimeMention.class );
+        List<TimeMention> timeMentions = JCasUtil
+            .select( jCas, TimeMention.class )
+            .stream()
+            .collect( Collectors.toList() );
 
-        for ( TimeMention timeMention : timeMentions){
-            normalize( jCas, DCT, fileName, timeMention );
+        LOGGER.info( "normalizing " + timeMentions.size() + " time expressions for " + fileName );
+        for ( TimeMention timeMention : ProgressBar.wrap( timeMentions, "Normalizing" ) ){
+            try{
+                int success = timeLimiter.callUninterruptiblyWithTimeout(
+                                                        () -> normalize( jCas, DCT, fileName, timeMention ),
+                                                        1,
+                                                        TimeUnit.SECONDS
+                                                        );
+            } catch (Exception e){
+                LOGGER.error( " could not parse timex with covered text " + timeMention.getCoveredText() + " in 1 seconds or less ");
+            }
         }
+        LOGGER.info("finished normalizing " + timeMentions.size() + " time expressions for " + fileName);
     }
 
-    private void normalize( JCas jCas, TimeSpan DCT, String fileName, TimeMention timeMention ){
+    private int normalize( JCas jCas, TimeSpan DCT, String fileName, TimeMention timeMention ){
         String typeName = "";
         String unnormalizedTimex = String.join(" ", timeMention.getCoveredText().split("\\s"));
         Temporal normalizedTimex = null;
@@ -91,14 +107,6 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
             normalizedTimex = normalizer.parse( unnormalizedTimex, DCT ).get();
         } catch (Exception ignored){}
         if ( normalizedTimex != null ){
-            // setting this in date due since breaking the
-            // parts up of the temporal mention is too weird at the moment
-            // and generally we're just using the date anyway
-            // timeMention.setDate( normalizedTimex.timeMLValue() );
-            // Time _placeHolder = new Time();
-            // _placeHolder.setNormalizedForm( normalizedTimex );
-            // _placeHolder.addToIndexes();
-            // timeMention.setTime( _placeHolder );
             Time time = timeMention.getTime();
             if (time == null){
                 time = new Time( jCas );
@@ -106,10 +114,7 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
             }
             time.setNormalizedForm( normalizedTimex.timeMLValue() );
             timeMention.setTime( time );
-            // LOGGER.info( fileName + ": timex " + timeMention.getCoveredText() + " normalized to " + timeMention.getTime().getNormalizedForm() );
         }
-        // else {
-        //     LOGGER.warn( fileName + ": resorting to unnormalized timex: " + unnormalizedTimex );
-        // }
+        return 0;
     }
 }

@@ -187,6 +187,7 @@ class TemporalExpressionParser(
         val temporals = temporalTries.collect { case Success(temporal) =>
           temporal
         }
+
         if (temporals.isEmpty) {
           temporalTries.collect { case Failure(e) => Failure(e) }.head
         }
@@ -200,8 +201,18 @@ class TemporalExpressionParser(
           // forPrints.foreach { case (temporal, timeML) =>
           //  println(s"$timeML \t $temporal")
           // }
-          Success(temporals.toSeq.sorted(this.heuristicFor(anchor)))
+
+          val finalAnswers = temporals.toSeq.sorted(this.heuristicFor(anchor))
+          if (parses.size > 2){
+            val finalAnswer = finalAnswers.head
+            val finalMLValue = finalAnswer.timeMLValue
+            this.logger.warning(
+              s"final answer for the parses $finalMLValue"
+            )
+          }
+          Success(finalAnswers)
         }
+
     }
   }
 

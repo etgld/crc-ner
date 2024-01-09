@@ -18,7 +18,6 @@
     <ctakes.version>5.0.0-SNAPSHOT</ctakes.version>
     <skip.assembly>false</skip.assembly>
   </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.apache.ctakes</groupId>
@@ -27,11 +26,21 @@
     </dependency>
 
     <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>33.0.0-jre</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.ctakes</groupId>
       <artifactId>ctakes-core</artifactId>
       <version>${ctakes.version}</version>
     </dependency>
-
+    <dependency>
+      <groupId>me.tongfei</groupId>
+      <artifactId>progressbar</artifactId>
+      <version>0.10.0</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.ctakes</groupId>
       <artifactId>ctakes-temporal</artifactId>
