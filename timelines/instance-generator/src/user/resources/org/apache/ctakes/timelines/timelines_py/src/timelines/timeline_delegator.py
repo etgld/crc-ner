@@ -8,7 +8,7 @@ from itertools import chain
 from transformers import pipeline
 from ctakes_pbj.component import cas_annotator
 from ctakes_pbj.type_system import ctakes_types
-from typing import List, Tuple, Dict, Optional, Generator, Union
+from typing import List, Tuple, Dict, Optional, Generator, Iterator, Union
 from cassis.typesystem import (
     # FEATURE_BASE_NAME_HEAD,
     # TYPE_NAME_FS_ARRAY,
@@ -119,6 +119,21 @@ def get_conmod_instance(event: FeatureStructure, cas: Cas) -> str:
     return result
 
 
+def timexes_with_normalization(
+    timexes: List[FeatureStructure],
+) -> Generator[FeatureStructure, None, None]:
+    def time_attr(timex):
+        return hasattr(timex, "time")
+
+    def norm_attr(timex):
+        return hasattr(timex.time, "normalizedForm")
+
+    filter_obj = filter(norm_attr, filter(time_attr, timexes))
+
+    for timex in filter_obj:
+        yield timex
+
+
 def get_tlink_instance(
     event: FeatureStructure,
     timex: FeatureStructure,
@@ -198,8 +213,7 @@ def get_dtr_instance(
 
 def get_tlink_window_mentions(
     event: FeatureStructure,
-    cas: Cas,
-    mention_types: List[Union[Type, str]],
+    relevant_mentions: Iterator[FeatureStructure],
     begin2token: Dict[int, int],
     end2token: Dict[int, int],
     token2char: List[Tuple[int, int]],
@@ -220,11 +234,25 @@ def get_tlink_window_mentions(
 
     # return [mention for mention in cas.select(mention_type) if in_window(mention)]
 
-    cas_grab = (cas.select(mention_type) for mention_type in mention_types)
-
-    for mention in chain.from_iterable(cas_grab):
+    for mention in relevant_mentions:
         if in_window(mention):
             yield mention
+
+
+def deleted_neighborhood(
+    central_mention: FeatureStructure, mentions: Iterator[FeatureStructure]
+) -> Generator[FeatureStructure, None, None]:
+    for mention in mentions:
+        if central_mention != mention:
+            yield mention
+
+
+def pt_and_note(cas: Cas):
+    document_path_collection = cas.select(ctakes_types.DocumentPath)
+    document_path = list(document_path_collection)[0].documentPath
+    patient_id = os.path.basename(os.path.dirname(document_path))
+    note_name = os.path.basename(document_path).split(".")[0]
+    return patient_id, note_name
 
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
@@ -298,21 +326,18 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         if len(chemos) > 0:
             self.write_raw_timelines(cas, chemos)
         else:
-            document_path_collection = cas.select(ctakes_types.DocumentPath)
-            document_path = list(document_path_collection)[0].documentPath
-            patient_id = os.path.basename(os.path.dirname(document_path))
-            note_name = os.path.basename(document_path).split(".")[0]
+            patient_id, note_name = pt_and_note(cas)
             print(
                 f"No chemotherapy mentions found in patient {patient_id} note {note_name} skipping"
             )
 
-    def write_raw_timelines(self, cas: Cas, chemo_mentions):
-        conmod_instances = [get_conmod_instance(chemo, cas) for chemo in chemo_mentions]
+    def write_raw_timelines(self, cas: Cas, chemo_mentions: List[FeatureStructure]):
+        conmod_instances = (get_conmod_instance(chemo, cas) for chemo in chemo_mentions)
 
-        conmod_classifications = [
+        conmod_classifications = (
             result["label"]
             for result in filter(None, self.conmod_classifier(conmod_instances))
-        ]
+        )
         positive_chemo_mentions = [
             chemo
             for chemo, modality in zip(chemo_mentions, conmod_classifications)
@@ -321,10 +346,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         if len(positive_chemo_mentions) > 0:
             self._write_positive_chemo_mentions(cas, positive_chemo_mentions)
         else:
-            document_path_collection = cas.select(ctakes_types.DocumentPath)
-            document_path = list(document_path_collection)[0].documentPath
-            patient_id = os.path.basename(os.path.dirname(document_path))
-            note_name = os.path.basename(document_path).split(".")[0]
+            patient_id, note_name = pt_and_note(cas)
             print(
                 f"No concrete chemotherapy mentions found in patient {patient_id} note {note_name} skipping"
             )
@@ -333,10 +355,12 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         self, cas, positive_chemo_mentions: List[FeatureStructure]
     ):
         timex_type = cas.typesystem.get_type(ctakes_types.TimeMention)
+        event_type = cas.typesystem.get_type(ctakes_types.EventMention)
         cas_source_data = cas.select(ctakes_types.Metadata)[0].sourceData
         # in its normalized string form, maybe need some exceptions
         # for if it's missing describing the file spec
         document_creation_time = cas_source_data.sourceOriginalDate
+        relevant_timexes = timexes_with_normalization(cas.select(timex_type))
 
         base_tokens, token_map = tokens_and_map(cas)
         begin2token, end2token = invert_map(token_map)
@@ -347,101 +371,119 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         )
 
         dtr_classifications = {
-            chemo: result["label"]
-            for chemo, result in zip(
-                positive_chemo_mentions, self.dtr_classifier(dtr_instances)
+            chemo: (result["label"], inst)
+            for chemo, result, inst in zip(
+                positive_chemo_mentions,
+                self.dtr_classifier(dtr_instances),
+                dtr_instances,
             )
         }
 
-        def tlink_result_dict(event: FeatureStructure) -> Dict[FeatureStructure, str]:
-            window_timexes = get_tlink_window_mentions(
-                event, cas, [timex_type], begin2token, end2token, token_map
+        def tlink_result_dict(chemo):
+            return self.tlink_result_dict(
+                event=chemo,
+                relevant_events=iter(positive_chemo_mentions),
+                relevant_timexes=relevant_timexes,
+                begin2token=begin2token,
+                end2token=end2token,
+                base_tokens=base_tokens,
+                token_map=token_map,
             )
-            # print(
-            #     f"timexes in window at event {event.get_covered_text()}: {[w.get_covered_text() for w in window_timexes]}"
-            # )
-            # print(
-            #     f"window for event {get_dtr_instance(event, base_tokens, begin2token, end2token)}"
-            # )
-            tlink_instances = (
-                get_tlink_instance(event, w_timex, base_tokens, begin2token, end2token)
-                for w_timex in window_timexes
-            )
-            return {
-                w_timex: result["label"]
-                for w_timex, result in zip(
-                    window_timexes, self.tlink_classifier(tlink_instances)
-                )
-            }
 
         tlink_classifications = {
             chemo: tlink_result_dict(chemo) for chemo in positive_chemo_mentions
         }
 
-        document_path_collection = cas.select(ctakes_types.DocumentPath)
-        document_path = list(document_path_collection)[0].documentPath
-        patient_id = os.path.basename(os.path.dirname(document_path))
-        note_name = os.path.basename(document_path).split(".")[0]
-        timexes = cas.select(timex_type)
-        if len(timexes) == 0:
-            print(f"WARNING: No timexes discovered in {patient_id} {note_name} verify")
+        patient_id, note_name = pt_and_note(cas)
+        if len(list(relevant_timexes)) == 0:
+            print(
+                f"WARNING: No normalized timexes discovered in {patient_id} file {note_name}"
+            )
         for chemo in positive_chemo_mentions:
             # chemo_text = (chemo.get_covered_text() if chemo is not None else "ERROR",)
-            chemo_dtr = dtr_classifications[chemo]
-            for timex, chemo_timex_rel in tlink_classifications[chemo].items():
-                timex_text = (
-                    timex.get_covered_text().replace("\\r\\n", "")
-                    if timex is not None
-                    else "ERROR"
-                )
+            (chemo_dtr, dtr_inst) = dtr_classifications[chemo]
+            for other_mention, tlink_inst_pair in tlink_classifications[chemo].items():
+                tlink, tlink_inst = tlink_inst_pair
                 chemo_text = (
-                    chemo.get_covered_text().replace("\\r\\n", "")
+                    chemo.get_covered_text().replace("\n", "")
                     if chemo is not None
                     else "ERROR",
                 )
 
-                if hasattr(timex, "time"):
-                    if hasattr(timex.time, "normalizedForm"):
-                        timex_text = timex.time.normalizedForm
-                #         print(
-                #             f"SUCCESS: timex {timex.get_covered_text()} normalized to {timex_text}"
-                #         )
-                #     else:
-                #         print(
-                #             f"ERROR: timex {timex} with text {timex_text} has time attr {timex.time} but no normalizedForm attr"
-                #         )
-                #         # pprint(vars(timex))
-                # else:
-                #     print(f"ERROR: timex {timex} with text {timex_text} unnormalized")
-                #     # pprint(vars(timex))
+                if isinstance(other_mention, timex_type):
+                    timex_text = other_mention.time.normalizedForm
+                    other_chemo_text = None
+                elif isinstance(other_mention, event_type):
+                    timex_text = None
+                    other_chemo_text = (
+                        other_mention.get_covered_text().replace("\n", "")
+                        if other_mention is not None
+                        else "ERROR",
+                    )
+                else:
+                    raw_text = (
+                        other_mention.get_covered_text().replace("\n", "")
+                        if other_mention is not None
+                        else "ERROR"
+                    )
+                    timex_text = f"TYPE ERROR {raw_text}"
+                    other_chemo_text = "TYPE ERROR"
                 instance = [
                     document_creation_time,
                     chemo_text,
                     chemo_dtr,
-                    # timex.get_covered_text() if timex is not None else "ERROR",
-                    # timex.time.normalizedForm
-                    # if timex is not None
-                    # else "ERROR",  # now that we're using the normalized date
                     timex_text,
-                    chemo_timex_rel,
+                    other_chemo_text,
+                    tlink,
                     note_name,
+                    dtr_inst,
+                    tlink_inst
                 ]
-                # print(instance)
                 self.raw_events[patient_id].append(instance)
-                # print(self.raw_events[patient_id])
+
+    def tlink_result_dict(
+        self,
+        event: FeatureStructure,
+        relevant_events: Iterator[FeatureStructure],
+        relevant_timexes: Iterator[FeatureStructure],
+        begin2token: Dict[int, int],
+        end2token: Dict[int, int],
+        base_tokens: List[str],
+        token_map: List[Tuple[int, int]],
+    ) -> Dict[FeatureStructure, Tuple[str, str]]:
+        relevant_mentions = chain.from_iterable(
+            (deleted_neighborhood(event, relevant_events), relevant_timexes)
+        )
+        window_mentions = get_tlink_window_mentions(
+            event, relevant_mentions, begin2token, end2token, token_map
+        )
+        tlink_instances = (
+            get_tlink_instance(event, w_timex, base_tokens, begin2token, end2token)
+            for w_timex in window_mentions
+        )
+        return {
+            window_mention: (result["label"], inst)
+            for window_mention, result, inst in zip(
+                window_mentions, self.tlink_classifier(tlink_instances), tlink_instances
+            )
+        }
 
     def collection_process_complete(self):
-        print("in collection_process_complete")
-        # Per 12/6/23 meeting, summarization is done
-        # outside the Docker to maximize the ability for the user
-        # to customize everything.  So we just write the raw results
-        # to tsv
+        print("Finished processing notes")
         for pt_id, records in self.raw_events.items():
-            print(f"writing {pt_id}")
+            print(f"Writing results for {pt_id}")
             pt_df = pd.DataFrame.from_records(
                 records,
-                columns=["DCT", "chemo_text", "dtr", "timex", "tlink", "note_name"],
+                columns=[
+                    "DCT",
+                    "chemo",
+                    "dtr",
+                    "normed_timex",
+                    "other_chemo",
+                    "tlink",
+                    "note_name",
+                    "dtr_inst",
+                    "tlink_inst",
+                ],
             )
-            print(pt_df)
-            print(f"writing in {os.getcwd()}")
             pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
