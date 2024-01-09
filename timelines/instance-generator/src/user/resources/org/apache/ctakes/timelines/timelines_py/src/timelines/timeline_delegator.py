@@ -31,6 +31,7 @@ MAX_TLINK_DISTANCE = 60
 TLINK_PAD_LENGTH = 2
 MODEL_MAX_LEN = 512
 SPECIAL_TOKENS = ["<e>", "</e>", "<a1>", "</a1>", "<a2>", "</a2>", "<cr>", "<neg>"]
+CHEMO_TUI = "T061"
 
 
 def tokens_and_map(
@@ -122,16 +123,12 @@ def get_conmod_instance(event: FeatureStructure, cas: Cas) -> str:
 def timexes_with_normalization(
     timexes: List[FeatureStructure],
 ) -> Generator[FeatureStructure, None, None]:
-    def time_attr(timex):
-        return hasattr(timex, "time")
+    def relevant(timex):
+        return hasattr(timex, "time") and hasattr(timex.time, "normalizedForm")
 
-    def norm_attr(timex):
-        return hasattr(timex.time, "normalizedForm")
-
-    filter_obj = filter(norm_attr, filter(time_attr, timexes))
-
-    for timex in filter_obj:
-        yield timex
+    for timex in timexes:
+        if relevant(timex):
+            yield timex
 
 
 def get_tlink_instance(
@@ -254,6 +251,13 @@ def pt_and_note(cas: Cas):
     note_name = os.path.basename(document_path).split(".")[0]
     return patient_id, note_name
 
+def get_tui(event: FeatureStructure) -> str:
+    ont_concepts = getattr(event, "ontologyConceptArr", None)
+    elements = getattr(ont_concepts, "elements", [])
+    if len(elements) > 0:
+        pass
+    pass
+
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
     def __init__(self):
@@ -320,10 +324,16 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
     # Process Sentences, adding Times, Events and TLinks found by cNLPT.
     def process(self, cas: Cas):
-        # TODO - will need TUI-based filtering later - T61
-        chemos = cas.select(cas.typesystem.get_type(ctakes_types.EventMention))
+        chemos = [
+            event
+            for event in cas.select(cas.typesystem.get_type(ctakes_types.EventMention))
+            # if hasattr(event, "tui") and (event.tui == CHEMO_TUI
+        ]
         # chemos = []
         if len(chemos) > 0:
+            print(chemos[0])
+            tuis = [chemo.tui for chemo in chemos if hasattr(chemo, "tui")] 
+            print(tuis)
             self.write_raw_timelines(cas, chemos)
         else:
             patient_id, note_name = pt_and_note(cas)
@@ -410,10 +420,10 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                     else "ERROR",
                 )
 
-                if isinstance(other_mention, timex_type):
+                if other_mention.type == timex_type:
                     timex_text = other_mention.time.normalizedForm
                     other_chemo_text = None
-                elif isinstance(other_mention, event_type):
+                elif other_mention.type == event_type:
                     timex_text = None
                     other_chemo_text = (
                         other_mention.get_covered_text().replace("\n", "")
@@ -421,6 +431,8 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                         else "ERROR",
                     )
                 else:
+                    print(other_mention)
+                    print(other_mention.type)
                     raw_text = (
                         other_mention.get_covered_text().replace("\n", "")
                         if other_mention is not None
@@ -437,7 +449,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                     tlink,
                     note_name,
                     dtr_inst,
-                    tlink_inst
+                    tlink_inst,
                 ]
                 self.raw_events[patient_id].append(instance)
 
