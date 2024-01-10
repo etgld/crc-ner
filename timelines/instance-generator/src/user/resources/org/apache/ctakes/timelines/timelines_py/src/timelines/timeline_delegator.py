@@ -30,15 +30,26 @@ DTR_WINDOW_RADIUS = 10
 MAX_TLINK_DISTANCE = 60
 TLINK_PAD_LENGTH = 2
 MODEL_MAX_LEN = 512
-SPECIAL_TOKENS = ["<e>", "</e>", "<a1>", "</a1>", "<a2>", "</a2>", "<cr>", "<neg>"]
+SPECIAL_TOKENS = [
+    "<e>",
+    "</e>",
+    "<a1>",
+    "</a1>",
+    "<a2>",
+    "</a2>",
+    "<cr>",
+    "<neg>",
+    "<newline>",
+]
 CHEMO_TUI = "T061"
 
 
 def tokens_and_map(
-    cas: Cas, context: Optional[FeatureStructure] = None
+    cas: Cas, context: Optional[FeatureStructure] = None, mode="conmod"
 ) -> Tuple[List[str], List[Tuple[int, int]]]:
     base_tokens = []
     token_map = []
+    newline_tag = "<cr>" if mode == "conmod" else "<newline>"
     newline_tokens = cas.select(ctakes_types.NewlineToken)
     newline_token_indices = {(item.begin, item.end) for item in newline_tokens}
     # duplicates = defaultdict(list)
@@ -56,7 +67,7 @@ def tokens_and_map(
         token_text = (
             base_token.get_covered_text()
             if (begin, end) not in newline_token_indices
-            else "<cr>"
+            else newline_tag
         )
         # TODO - ask Sean and Guergana why there might be duplicate Newline tokens
         # if begin in token_collection:
@@ -105,7 +116,7 @@ def invert_map(
 
 def get_conmod_instance(event: FeatureStructure, cas: Cas) -> str:
     raw_sentence = list(cas.select_covering(ctakes_types.Sentence, event))[0]
-    tokens, token_map = tokens_and_map(cas, raw_sentence)
+    tokens, token_map = tokens_and_map(cas, raw_sentence, mode="conmod")
     begin2token, end2token = invert_map(token_map)
     event_begin = begin2token[event.begin]
     event_end = end2token[event.end] + 1
@@ -189,9 +200,6 @@ def get_dtr_instance(
     begin2token: Dict[int, int],
     end2token: Dict[int, int],
 ) -> str:
-    # raw_sentence = cas.select_covering(ctakes_types.Sentence, event)[0]
-    # tokens, token_map = tokens_and_map(cas, raw_sentence)
-    # inverse_map = invert_map(token_map)
     event_begin = begin2token[event.begin]
     event_end = end2token[event.end] + 1
     # window_tokens = tokens[event_begin - window_radius:event_end + window_radius - 1]
@@ -394,9 +402,8 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         document_creation_time = cas_source_data.sourceOriginalDate
         relevant_timexes = timexes_with_normalization(cas.select(timex_type))
 
-        base_tokens, token_map = tokens_and_map(cas)
+        base_tokens, token_map = tokens_and_map(cas, mode="dtr")
         begin2token, end2token = invert_map(token_map)
-
 
         def dtr_result(chemo):
             inst = get_dtr_instance(chemo, base_tokens, begin2token, end2token)

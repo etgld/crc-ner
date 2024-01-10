@@ -139,16 +139,16 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
             try{
                 normalizedTimex = timeLimiter
                     .callUninterruptiblyWithTimeout(
-                                                    () -> normalizer.parse( unnormalizedTimex, DCT ).get(),
-                                                    _timeout,
-                                                    TimeUnit.SECONDS,
-                                                    );
+                        () -> normalizer.parse( unnormalizedTimex, DCT ).get(),
+                        _timeout,
+                        TimeUnit.SECONDS );
             } catch ( Exception ignored ){
                 LOGGER.error( "Timenorm could not parse timex " + timeMention.getCoveredText() + " in " + _timeout + " seconds or less");
+                return;
             }
         } catch ( Exception ignored ){
-            LOGGER.error( ""Timenorm failed to normalize timex " + unnormalizedTimex );
-            return 1;
+            LOGGER.error( "Timenorm failed to normalize timex " + unnormalizedTimex );
+            return;
         }
         if ( normalizedTimex != null ){
             Time time = timeMention.getTime();
