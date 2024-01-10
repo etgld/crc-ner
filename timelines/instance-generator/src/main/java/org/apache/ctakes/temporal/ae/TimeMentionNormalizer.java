@@ -56,7 +56,7 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
 
     // @ConfigurationParameter( name = TimeMentionNormalizer.SKIP_NO_TUI, mandatory = false,
     //                          description = "Skip processing notes that have no relevant event mentions" )
-    private String _tui = "T61";
+    private String _tui = "T061";
 
 
     // @ConfigurationParameter( name = TimeMentionNormalizer.TIMEOUT, mandatory = false,
@@ -68,23 +68,21 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
         final String docTime = sourceData.getSourceOriginalDate();
         DocumentPath documentPath = JCasUtil.select( jCas, DocumentPath.class ).iterator().next();
         final String fileName = FilenameUtils.getBaseName( documentPath.getDocumentPath() );
-        List<String> TUIs = JCasUtil
-            .select( jCas, EventMention.class )
-            .stream()
-            .map( OntologyConceptUtil::getUmlsConcepts )
-            .flatMap( Collection::stream )
-            .map( UmlsConcept::getTui )
-            .collect( Collectors.toList() );
-        LOGGER.info(fileName + " : " + TUIs );
+        if (_tui != null && !_tui.trim().isEmpty()){
+            long relevantTUICount = JCasUtil
+                .select( jCas, EventMention.class )
+                .stream()
+                .map( OntologyConceptUtil::getUmlsConcepts )
+                .flatMap( Collection::stream )
+                .map( UmlsConcept::getTui )
+                .filter( tui -> tui.equals( _tui ) )
+                .collect( Collectors.counting() );
 
-        TUIs
-            .stream()
-            .filter( tui -> tui.equals( _tui ) )
-            .collect( Collectors.toList() );
-        // if ( TUIs.size() == 0 ){
-        //     LOGGER.info(fileName + " : Irrelevant note, skipping to save processing");
-        //     return;
-        // }
+            if ( relevantTUICount == 0 ){
+                LOGGER.info(fileName + " : no events with TUI " + _tui + ", skipping to save time");
+                return;
+            }
+        }
 
         TimeSpan _DCT = null;
         if ( docTime == null || docTime.isEmpty() ){

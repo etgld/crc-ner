@@ -8,7 +8,7 @@ from itertools import chain
 from transformers import pipeline
 from ctakes_pbj.component import cas_annotator
 from ctakes_pbj.type_system import ctakes_types
-from typing import List, Tuple, Dict, Optional, Generator, Iterator, Union
+from typing import List, Tuple, Dict, Optional, Generator, Iterator, Union, Set
 from cassis.typesystem import (
     # FEATURE_BASE_NAME_HEAD,
     # TYPE_NAME_FS_ARRAY,
@@ -122,14 +122,11 @@ def get_conmod_instance(event: FeatureStructure, cas: Cas) -> str:
 
 def timexes_with_normalization(
     timexes: List[FeatureStructure],
-) -> Generator[FeatureStructure, None, None]:
+) -> List[FeatureStructure]:
     def relevant(timex):
         return hasattr(timex, "time") and hasattr(timex.time, "normalizedForm")
 
-    for timex in timexes:
-        if relevant(timex):
-            yield timex
-
+    return [timex for timex in timexes if relevant(timex)]
 
 def get_tlink_instance(
     event: FeatureStructure,
@@ -237,7 +234,7 @@ def get_tlink_window_mentions(
 
 
 def deleted_neighborhood(
-    central_mention: FeatureStructure, mentions: Iterator[FeatureStructure]
+    central_mention: FeatureStructure, mentions: List[FeatureStructure]
 ) -> Generator[FeatureStructure, None, None]:
     for mention in mentions:
         if central_mention != mention:
@@ -251,12 +248,16 @@ def pt_and_note(cas: Cas):
     note_name = os.path.basename(document_path).split(".")[0]
     return patient_id, note_name
 
-def get_tui(event: FeatureStructure) -> str:
-    ont_concepts = getattr(event, "ontologyConceptArr", None)
-    elements = getattr(ont_concepts, "elements", [])
+
+def get_tuis(event: FeatureStructure) -> Set[str]:
+    def get_tui(event):
+        return getattr(event, "tui", None)
+
+    ont_concept_arr = getattr(event, "ontologyConceptArr", None)
+    elements = getattr(ont_concept_arr, "elements", [])
     if len(elements) > 0:
-        pass
-    pass
+        return set([*filter(None, map(get_tui, elements))])
+    return set()
 
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
@@ -324,45 +325,42 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
     # Process Sentences, adding Times, Events and TLinks found by cNLPT.
     def process(self, cas: Cas):
-        chemos = [
+        proc_mentions = [
             event
             for event in cas.select(cas.typesystem.get_type(ctakes_types.EventMention))
-            # if hasattr(event, "tui") and (event.tui == CHEMO_TUI
+            if CHEMO_TUI in get_tuis(event) # as of 1/10/24, using T061 which is ProcedureMention
         ]
-        # chemos = []
-        if len(chemos) > 0:
-            print(chemos[0])
-            tuis = [chemo.tui for chemo in chemos if hasattr(chemo, "tui")] 
-            print(tuis)
-            self.write_raw_timelines(cas, chemos)
+
+        if len(proc_mentions) > 0:
+            self.write_raw_timelines(cas, proc_mentions)
         else:
             patient_id, note_name = pt_and_note(cas)
             print(
-                f"No chemotherapy mentions found in patient {patient_id} note {note_name} skipping"
+                f"No chemotherapy mentions ( using TUI: {CHEMO_TUI} ) found in patient {patient_id} note {note_name} skipping"
             )
 
-    def write_raw_timelines(self, cas: Cas, chemo_mentions: List[FeatureStructure]):
-        conmod_instances = (get_conmod_instance(chemo, cas) for chemo in chemo_mentions)
+    def write_raw_timelines(self, cas: Cas, proc_mentions: List[FeatureStructure]):
+        conmod_instances = (get_conmod_instance(chemo, cas) for chemo in proc_mentions)
 
         conmod_classifications = (
             result["label"]
             for result in filter(None, self.conmod_classifier(conmod_instances))
         )
-        positive_chemo_mentions = [
+        actual_proc_mentions = [
             chemo
-            for chemo, modality in zip(chemo_mentions, conmod_classifications)
+            for chemo, modality in zip(proc_mentions, conmod_classifications)
             if modality == "ACTUAL"
         ]
-        if len(positive_chemo_mentions) > 0:
-            self._write_positive_chemo_mentions(cas, positive_chemo_mentions)
+        if len(actual_proc_mentions) > 0:
+            self._write_actual_proc_mentions(cas, actual_proc_mentions)
         else:
             patient_id, note_name = pt_and_note(cas)
             print(
                 f"No concrete chemotherapy mentions found in patient {patient_id} note {note_name} skipping"
             )
 
-    def _write_positive_chemo_mentions(
-        self, cas, positive_chemo_mentions: List[FeatureStructure]
+    def _write_actual_proc_mentions(
+        self, cas: Cas, positive_chemo_mentions: List[FeatureStructure]
     ):
         timex_type = cas.typesystem.get_type(ctakes_types.TimeMention)
         event_type = cas.typesystem.get_type(ctakes_types.EventMention)
@@ -392,7 +390,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         def tlink_result_dict(chemo):
             return self.tlink_result_dict(
                 event=chemo,
-                relevant_events=iter(positive_chemo_mentions),
+                relevant_events=positive_chemo_mentions,
                 relevant_timexes=relevant_timexes,
                 begin2token=begin2token,
                 end2token=end2token,
@@ -421,6 +419,8 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 )
 
                 if other_mention.type == timex_type:
+                    # if it's in relevant_timexes we can
+                    # take for granted that it has these attributes
                     timex_text = other_mention.time.normalizedForm
                     other_chemo_text = None
                 elif other_mention.type == event_type:
@@ -456,8 +456,8 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
     def tlink_result_dict(
         self,
         event: FeatureStructure,
-        relevant_events: Iterator[FeatureStructure],
-        relevant_timexes: Iterator[FeatureStructure],
+        relevant_events: List[FeatureStructure],
+        relevant_timexes: List[FeatureStructure],
         begin2token: Dict[int, int],
         end2token: Dict[int, int],
         base_tokens: List[str],

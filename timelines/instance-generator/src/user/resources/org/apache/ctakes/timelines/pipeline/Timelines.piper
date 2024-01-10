@@ -29,12 +29,15 @@ add TokenizerAnnotatorPTB
 // since the time annotation is (was?) out of wack
 add ContextDependentTokenizerAnnotator
 
-add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
-add DCTAnnotator
-add TimeMentionNormalizer
-
 // Dictionary module requires tokens so needs to be loaded after the tokenization stack
 load DictionarySubPipe
+
+add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
+add DCTAnnotator
+// loading this after the dictionaries so
+// we no longer waste time normalizing timexes
+// for files with no chemos
+add TimeMentionNormalizer
 
 // add PbjJmsSender SendQueue=JavaToPy SendStop=no
 add PbjJmsSender SendQueue=JavaToPy SendStop=yes
