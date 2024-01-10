@@ -128,6 +128,7 @@ def timexes_with_normalization(
 
     return [timex for timex in timexes if relevant(timex)]
 
+
 def get_tlink_instance(
     event: FeatureStructure,
     timex: FeatureStructure,
@@ -328,7 +329,8 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         proc_mentions = [
             event
             for event in cas.select(cas.typesystem.get_type(ctakes_types.EventMention))
-            if CHEMO_TUI in get_tuis(event) # as of 1/10/24, using T061 which is ProcedureMention
+            if CHEMO_TUI
+            in get_tuis(event)  # as of 1/10/24, using T061 which is ProcedureMention
         ]
 
         if len(proc_mentions) > 0:
@@ -373,19 +375,26 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         base_tokens, token_map = tokens_and_map(cas)
         begin2token, end2token = invert_map(token_map)
 
-        dtr_instances = (
-            get_dtr_instance(chemo, base_tokens, begin2token, end2token)
-            for chemo in positive_chemo_mentions
-        )
+        # dtr_instances = (
+        #     get_dtr_instance(chemo, base_tokens, begin2token, end2token)
+        #     for chemo in positive_chemo_mentions
+        # )
 
-        dtr_classifications = {
-            chemo: (result["label"], inst)
-            for chemo, result, inst in zip(
-                positive_chemo_mentions,
-                self.dtr_classifier(dtr_instances),
-                dtr_instances,
-            )
-        }
+        def dtr_result(chemo):
+            inst = get_dtr_instance(chemo, base_tokens, begin2token, end2token)
+            result = list(self.dtr_classifier(inst))[0]
+            label = result["label"]
+            return label, inst
+
+        # dtr_classifications = {dtr_result(chemo) for chemo in positive_chemo_mentions}
+        # dtr_classifications = {
+        #     chemo: (result["label"], inst)
+        #     for chemo, result, inst in zip(
+        #         positive_chemo_mentions,
+        #         self.dtr_classifier(dtr_instances),
+        #         dtr_instances,
+        #     )
+        # }
 
         def tlink_result_dict(chemo):
             return self.tlink_result_dict(
@@ -398,9 +407,9 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 token_map=token_map,
             )
 
-        tlink_classifications = {
-            chemo: tlink_result_dict(chemo) for chemo in positive_chemo_mentions
-        }
+        # tlink_classifications = {
+        #     chemo: tlink_result_dict(chemo) for chemo in positive_chemo_mentions
+        # }
 
         patient_id, note_name = pt_and_note(cas)
         if len(list(relevant_timexes)) == 0:
@@ -409,8 +418,22 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             )
         for chemo in positive_chemo_mentions:
             # chemo_text = (chemo.get_covered_text() if chemo is not None else "ERROR",)
-            (chemo_dtr, dtr_inst) = dtr_classifications[chemo]
-            for other_mention, tlink_inst_pair in tlink_classifications[chemo].items():
+            # packet = dtr_classifications.get(chemo, None)
+            # if packet is None:
+            #     print("\nproblem with dictionary key\n")
+            #     pprint(chemo)
+            #     print("\nfull dictionary keys\n")
+            #     for key in dtr_classifications.keys():
+            #         pprint(key)
+            #     print("\npositive chemo list\n")
+            #     for act_chemo in positive_chemo_mentions:
+            #         pprint(act_chemo)
+            #     exit(1)
+            # chemo_dtr, dtr_inst = packet
+            chemo_dtr, dtr_inst = dtr_result(chemo)
+            # for other_mention, tlink_inst_pair in tlink_classifications[chemo].items():
+            tlink_dict = tlink_result_dict(chemo)
+            for other_mention, tlink_inst_pair in tlink_dict.items():
                 tlink, tlink_inst = tlink_inst_pair
                 chemo_text = (
                     chemo.get_covered_text().replace("\n", "")
