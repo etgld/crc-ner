@@ -61,7 +61,7 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
 
     // @ConfigurationParameter( name = TimeMentionNormalizer.TIMEOUT, mandatory = false,
     //                          description = "Stop trying to normalize a TimeMention after this many seconds" )
-    private int _timeout = 5;
+    private int _timeout = 15;
     @Override
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
         final SourceData sourceData = SourceMetadataUtil.getOrCreateSourceData( jCas );
@@ -114,30 +114,40 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
 
         LOGGER.info( "normalizing " + timeMentions.size() + " time expressions for " + fileName );
         for ( TimeMention timeMention : ProgressBar.wrap( timeMentions, "Normalizing" ) ){
-            try{
-                int success = timeLimiter.callUninterruptiblyWithTimeout(
-                                                        () -> normalize( jCas, DCT, fileName, timeMention ),
-                                                        _timeout,
-                                                        TimeUnit.SECONDS
-                                                        );
-            } catch (Exception e){
-                String unnormalizedTimex = String.join(" ", timeMention.getCoveredText().split("\\s"));
-                LOGGER.error( " could not parse timex with covered text " + timeMention.getCoveredText() + " in " + _timeout + " seconds or less ");
-            }
+            // try{
+            //     int success = timeLimiter.callUninterruptiblyWithTimeout(
+            //                                             () -> normalize( jCas, DCT, fileName, timeMention ),
+            //                                             _timeout,
+            //                                             TimeUnit.SECONDS
+            //                                             );
+            // } catch (Exception e){
+            //     String unnormalizedTimex = String.join(" ", timeMention.getCoveredText().split("\\s"));
+            //     LOGGER.error( " could not parse timex with covered text " + timeMention.getCoveredText() + " in " + _timeout + " seconds or less ");
+            // }
+            normalize( jCas, DCT, fileName, timeMention );
         }
         LOGGER.info("finished normalizing " + timeMentions.size() + " time expressions for " + fileName);
     }
 
-    private int normalize( JCas jCas, TimeSpan DCT, String fileName, TimeMention timeMention ){
+    private void normalize( JCas jCas, TimeSpan DCT, String fileName, TimeMention timeMention ){
         String typeName = "";
         String unnormalizedTimex = String.join(" ", timeMention.getCoveredText().split("\\s"));
         Temporal normalizedTimex = null;
         int begin = timeMention.getBegin();
         int end = timeMention.getEnd();
         try{
-            normalizedTimex = normalizer.parse( unnormalizedTimex, DCT ).get();
-        } catch (Exception ignored){
-            LOGGER.error( "failed to normalize timex " + unnormalizedTimex );
+            try{
+                normalizedTimex = timeLimiter
+                    .callUninterruptiblyWithTimeout(
+                                                    () -> normalizer.parse( unnormalizedTimex, DCT ).get(),
+                                                    _timeout,
+                                                    TimeUnit.SECONDS,
+                                                    );
+            } catch ( Exception ignored ){
+                LOGGER.error( "Timenorm could not parse timex " + timeMention.getCoveredText() + " in " + _timeout + " seconds or less");
+            }
+        } catch ( Exception ignored ){
+            LOGGER.error( ""Timenorm failed to normalize timex " + unnormalizedTimex );
             return 1;
         }
         if ( normalizedTimex != null ){
@@ -149,6 +159,5 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
             time.setNormalizedForm( normalizedTimex.timeMLValue() );
             timeMention.setTime( time );
         }
-        return 0;
     }
 }

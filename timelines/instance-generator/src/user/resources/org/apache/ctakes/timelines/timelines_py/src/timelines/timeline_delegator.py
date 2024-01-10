@@ -216,11 +216,13 @@ def get_tlink_window_mentions(
     event_begin_token_index = begin2token[event.begin]
     event_end_token_index = end2token[event.end]
 
-    token_idk_begin = max(0, event_begin_token_index - MAX_TLINK_DISTANCE)
-    token_idk_end = min(len(token2char) - 1, event_end_token_index + MAX_TLINK_DISTANCE)
+    token_window_begin = max(0, event_begin_token_index - MAX_TLINK_DISTANCE)
+    token_window_end = min(
+        len(token2char) - 1, event_end_token_index + MAX_TLINK_DISTANCE
+    )
 
-    char_window_begin = token2char[token_idk_begin][0]
-    char_window_end = token2char[token_idk_end][1]
+    char_window_begin = token2char[token_window_begin][0]
+    char_window_end = token2char[token_window_end][1]
 
     def in_window(mention):
         begin_inside = char_window_begin <= mention.begin <= char_window_end
@@ -334,14 +336,34 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         ]
 
         if len(proc_mentions) > 0:
-            self.write_raw_timelines(cas, proc_mentions)
+            self._write_raw_timelines(cas, proc_mentions)
         else:
             patient_id, note_name = pt_and_note(cas)
             print(
                 f"No chemotherapy mentions ( using TUI: {CHEMO_TUI} ) found in patient {patient_id} note {note_name} skipping"
             )
 
-    def write_raw_timelines(self, cas: Cas, proc_mentions: List[FeatureStructure]):
+    def collection_process_complete(self):
+        print("Finished processing notes")
+        for pt_id, records in self.raw_events.items():
+            print(f"Writing results for {pt_id}")
+            pt_df = pd.DataFrame.from_records(
+                records,
+                columns=[
+                    "DCT",
+                    "chemo",
+                    "dtr",
+                    "normed_timex",
+                    "other_chemo",
+                    "tlink",
+                    "note_name",
+                    "dtr_inst",
+                    "tlink_inst",
+                ],
+            )
+            pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
+
+    def _write_raw_timelines(self, cas: Cas, proc_mentions: List[FeatureStructure]):
         conmod_instances = (get_conmod_instance(chemo, cas) for chemo in proc_mentions)
 
         conmod_classifications = (
@@ -375,26 +397,12 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         base_tokens, token_map = tokens_and_map(cas)
         begin2token, end2token = invert_map(token_map)
 
-        # dtr_instances = (
-        #     get_dtr_instance(chemo, base_tokens, begin2token, end2token)
-        #     for chemo in positive_chemo_mentions
-        # )
 
         def dtr_result(chemo):
             inst = get_dtr_instance(chemo, base_tokens, begin2token, end2token)
             result = list(self.dtr_classifier(inst))[0]
             label = result["label"]
             return label, inst
-
-        # dtr_classifications = {dtr_result(chemo) for chemo in positive_chemo_mentions}
-        # dtr_classifications = {
-        #     chemo: (result["label"], inst)
-        #     for chemo, result, inst in zip(
-        #         positive_chemo_mentions,
-        #         self.dtr_classifier(dtr_instances),
-        #         dtr_instances,
-        #     )
-        # }
 
         def tlink_result_dict(chemo):
             return self.tlink_result_dict(
@@ -407,31 +415,13 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 token_map=token_map,
             )
 
-        # tlink_classifications = {
-        #     chemo: tlink_result_dict(chemo) for chemo in positive_chemo_mentions
-        # }
-
         patient_id, note_name = pt_and_note(cas)
         if len(list(relevant_timexes)) == 0:
             print(
                 f"WARNING: No normalized timexes discovered in {patient_id} file {note_name}"
             )
         for chemo in positive_chemo_mentions:
-            # chemo_text = (chemo.get_covered_text() if chemo is not None else "ERROR",)
-            # packet = dtr_classifications.get(chemo, None)
-            # if packet is None:
-            #     print("\nproblem with dictionary key\n")
-            #     pprint(chemo)
-            #     print("\nfull dictionary keys\n")
-            #     for key in dtr_classifications.keys():
-            #         pprint(key)
-            #     print("\npositive chemo list\n")
-            #     for act_chemo in positive_chemo_mentions:
-            #         pprint(act_chemo)
-            #     exit(1)
-            # chemo_dtr, dtr_inst = packet
             chemo_dtr, dtr_inst = dtr_result(chemo)
-            # for other_mention, tlink_inst_pair in tlink_classifications[chemo].items():
             tlink_dict = tlink_result_dict(chemo)
             for other_mention, tlink_inst_pair in tlink_dict.items():
                 tlink, tlink_inst = tlink_inst_pair
@@ -442,12 +432,10 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 )
 
                 if other_mention.type == timex_type:
-                    # if it's in relevant_timexes we can
-                    # take for granted that it has these attributes
                     timex_text = other_mention.time.normalizedForm
-                    other_chemo_text = None
+                    other_chemo_text = "none"
                 elif other_mention.type == event_type:
-                    timex_text = None
+                    timex_text = "none"
                     other_chemo_text = (
                         other_mention.get_covered_text().replace("\n", "")
                         if other_mention is not None
@@ -502,23 +490,3 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 window_mentions, self.tlink_classifier(tlink_instances), tlink_instances
             )
         }
-
-    def collection_process_complete(self):
-        print("Finished processing notes")
-        for pt_id, records in self.raw_events.items():
-            print(f"Writing results for {pt_id}")
-            pt_df = pd.DataFrame.from_records(
-                records,
-                columns=[
-                    "DCT",
-                    "chemo",
-                    "dtr",
-                    "normed_timex",
-                    "other_chemo",
-                    "tlink",
-                    "note_name",
-                    "dtr_inst",
-                    "tlink_inst",
-                ],
-            )
-            pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
