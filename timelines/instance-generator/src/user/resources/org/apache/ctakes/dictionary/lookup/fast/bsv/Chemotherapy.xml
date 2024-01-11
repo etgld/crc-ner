@@ -21,7 +21,7 @@ under the License.
     <dictionaries>
         <dictionary>
             <name>DeepPheTerms</name>
-            <implementationName>org.apache.ctakes.dictionary.lookup2.dictionary.UmlsJdbcRareWordDictionary</implementationName>
+            <implementationName>org.apache.ctakes.dictionary.lookup2.dictionary.JdbcRareWordDictionary</implementationName>
             <properties>
                 <!-- urls for hsqldb memory connections must be file types in hsql 1.8.
                 These file urls must be either absolute path or relative to current working directory.
@@ -45,7 +45,7 @@ under the License.
     <conceptFactories>
         <conceptFactory>
             <name>DeepPheConcepts</name>
-            <implementationName>org.apache.ctakes.dictionary.lookup2.concept.UmlsJdbcConceptFactory</implementationName>
+            <implementationName>org.apache.ctakes.dictionary.lookup2.concept.JdbcConceptFactory</implementationName>
             <properties>
                 <property key="jdbcDriver" value="org.hsqldb.jdbcDriver"/>
                 <property key="jdbcUrl" value="jdbc:hsqldb:file:resources/org/apache/ctakes/dictionary/lookup/fast/hsqldb/Chemotherapy"/>
