@@ -44,6 +44,13 @@ SPECIAL_TOKENS = [
 CHEMO_TUI = "T061"
 
 
+def normlize_mention(mention: Union[FeatureStructure, None]) -> str:
+    if mention is not None:
+        (raw_mention_text,) = mention.get_covered_text()
+        return raw_mention_text.replace("\n", "")
+    return "ERROR"
+
+
 def tokens_and_map(
     cas: Cas, context: Optional[FeatureStructure] = None, mode="conmod"
 ) -> Tuple[List[str], List[Tuple[int, int]]]:
@@ -412,14 +419,19 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             return label, inst
 
         def tlink_result_dict(chemo):
+            relevant_mentions = chain.from_iterable(
+                deleted_neighborhood(chemo, positive_chemo_mentions), relevant_timexes
+            )
+            window_mentions = get_tlink_window_mentions(
+                chemo, relevant_mentions, begin2token, end2token, token_map
+            )
+
+            begin_end_maps = begin2token, end2token
             return self.tlink_result_dict(
                 event=chemo,
-                relevant_events=positive_chemo_mentions,
-                relevant_timexes=relevant_timexes,
-                begin2token=begin2token,
-                end2token=end2token,
+                window_mentions=window_mentions,
+                begin_end_maps=begin_end_maps,
                 base_tokens=base_tokens,
-                token_map=token_map,
             )
 
         patient_id, note_name = pt_and_note(cas)
@@ -432,22 +444,13 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             tlink_dict = tlink_result_dict(chemo)
             for other_mention, tlink_inst_pair in tlink_dict.items():
                 tlink, tlink_inst = tlink_inst_pair
-                chemo_text = (
-                    chemo.get_covered_text().replace("\n", "")
-                    if chemo is not None
-                    else "ERROR",
-                )
-
+                chemo_text = normalize_mention(chemo)
                 if other_mention.type == timex_type:
                     timex_text = other_mention.time.normalizedForm
                     other_chemo_text = "none"
                 elif other_mention.type == event_type:
                     timex_text = "none"
-                    other_chemo_text = (
-                        other_mention.get_covered_text().replace("\n", "")
-                        if other_mention is not None
-                        else "ERROR",
-                    )
+                    other_chemo_text = normalize_mention(other_mention)
                 else:
                     print(other_mention)
                     print(other_mention.type)
@@ -474,19 +477,11 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
     def tlink_result_dict(
         self,
         event: FeatureStructure,
-        relevant_events: List[FeatureStructure],
-        relevant_timexes: List[FeatureStructure],
-        begin2token: Dict[int, int],
-        end2token: Dict[int, int],
+        window_mentions: Generator[FeatureStructure, None, None],
+        begin_end_maps: Tuple[Dict[int, int], Dict[int, int]],
         base_tokens: List[str],
-        token_map: List[Tuple[int, int]],
     ) -> Dict[FeatureStructure, Tuple[str, str]]:
-        relevant_mentions = chain.from_iterable(
-            (deleted_neighborhood(event, relevant_events), relevant_timexes)
-        )
-        window_mentions = get_tlink_window_mentions(
-            event, relevant_mentions, begin2token, end2token, token_map
-        )
+        begin2token, end2token = begin_end_maps
         tlink_instances = (
             get_tlink_instance(event, w_timex, base_tokens, begin2token, end2token)
             for w_timex in window_mentions

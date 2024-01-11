@@ -50,12 +50,18 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
         this.terms = getTerms();
     }
 
+    @Override
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
-        JCasUtil.select( jCas, EventMention.class )
+        try {
+            JCasUtil.select( jCas, EventMention.class )
                 .stream()
                 // TODO filter by meds / TUI T121
+                // or actually is it TUI T061 ?
                 .filter( this::toRemove )
                 .forEach( EventMention::removeFromIndexes );
+        } catch ( Exception e ){
+            throw new AnalysisEngineProcessException(e);
+        }
     }
 
     private boolean toRemove( EventMention eventMention ){
@@ -77,11 +83,11 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
 
 
 
-        int certainty = Optional.of( eventMention )
-                .map( IdentifiedAnnotation::getUncertainty )
-                .orElse( CONST.NE_UNCERTAINTY_ABSENT );
+        // int certainty = Optional.of( eventMention )
+        //         .map( IdentifiedAnnotation::getUncertainty )
+        //         .orElse( CONST.NE_UNCERTAINTY_ABSENT );
 
-        boolean isUncertain = certainty == CONST.NE_UNCERTAINTY_PRESENT;
+        // boolean isUncertain = certainty == CONST.NE_UNCERTAINTY_PRESENT;
 
         // this is very very brute force, it behooves us to check
         // how the dictionary lookup works since there are ways for even
@@ -94,10 +100,11 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
                             term -> eventMention
                                     .getCoveredText()
                                     .toLowerCase()
-                                    .contains(term)
+                                    // .contains(term)
+                                    .equals( term )
                     );
         }
-        return isFilterMatch || isUncertain; //isHypothetical;
+        return isFilterMatch; // || isUncertain; //isHypothetical;
     }
 
     private Set<String> getTerms() {

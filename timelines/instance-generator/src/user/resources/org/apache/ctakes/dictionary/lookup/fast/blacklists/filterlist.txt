@@ -1,4 +1,3 @@
-move
-Nothing
-chemotherapy
-medications
+ca
+pt
+fam
