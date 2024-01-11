@@ -44,9 +44,9 @@ SPECIAL_TOKENS = [
 CHEMO_TUI = "T061"
 
 
-def normlize_mention(mention: Union[FeatureStructure, None]) -> str:
+def normalize_mention(mention: Union[FeatureStructure, None]) -> str:
     if mention is not None:
-        (raw_mention_text,) = mention.get_covered_text()
+        raw_mention_text = mention.get_covered_text()
         return raw_mention_text.replace("\n", "")
     return "ERROR"
 
@@ -274,7 +274,7 @@ def get_tuis(event: FeatureStructure) -> Set[str]:
     ont_concept_arr = getattr(event, "ontologyConceptArr", None)
     elements = getattr(ont_concept_arr, "elements", [])
     if len(elements) > 0:
-        return set([*filter(None, map(get_tui, elements))])
+        return {tui for tui in map(get_tui, elements) if tui is not None}
     return set()
 
 
@@ -357,13 +357,15 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             print(
                 f"No chemotherapy mentions ( using TUI: {CHEMO_TUI} ) found in patient {patient_id} note {note_name} skipping"
             )
+            # mostly just to create the key in the dictionary
+            self.raw_events[patient_id].append([])
 
     def collection_process_complete(self):
         print("Finished processing notes")
         for pt_id, records in self.raw_events.items():
             print(f"Writing results for {pt_id}")
             pt_df = pd.DataFrame.from_records(
-                records,
+                filter(len, records),
                 columns=[
                     "DCT",
                     "chemo",
@@ -390,13 +392,18 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             for chemo, modality in zip(proc_mentions, conmod_classifications)
             if modality == "ACTUAL"
         ]
+
+        patient_id, note_name = pt_and_note(cas)
         if len(actual_proc_mentions) > 0:
+            print(
+                f"Found concrete chemotherapy mentions in patient {patient_id} note {note_name} proceeding"
+            )
             self._write_actual_proc_mentions(cas, actual_proc_mentions)
         else:
-            patient_id, note_name = pt_and_note(cas)
             print(
                 f"No concrete chemotherapy mentions found in patient {patient_id} note {note_name} skipping"
             )
+            self.raw_events[patient_id].append([])
 
     def _write_actual_proc_mentions(
         self, cas: Cas, positive_chemo_mentions: List[FeatureStructure]
@@ -404,8 +411,6 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         timex_type = cas.typesystem.get_type(ctakes_types.TimeMention)
         event_type = cas.typesystem.get_type(ctakes_types.EventMention)
         cas_source_data = cas.select(ctakes_types.Metadata)[0].sourceData
-        # in its normalized string form, maybe need some exceptions
-        # for if it's missing describing the file spec
         document_creation_time = cas_source_data.sourceOriginalDate
         relevant_timexes = timexes_with_normalization(cas.select(timex_type))
 
@@ -418,21 +423,26 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             label = result["label"]
             return label, inst
 
+        def tlink_result(chemo, other_mention):
+            inst = get_tlink_instance(
+                chemo, other_mention, base_tokens, begin2token, end2token
+            )
+            result = list(self.tlink_classifier(inst))[0]
+            label = result["label"]
+            return label, inst
+
         def tlink_result_dict(chemo):
             relevant_mentions = chain.from_iterable(
-                deleted_neighborhood(chemo, positive_chemo_mentions), relevant_timexes
+                (deleted_neighborhood(chemo, positive_chemo_mentions), relevant_timexes)
             )
             window_mentions = get_tlink_window_mentions(
                 chemo, relevant_mentions, begin2token, end2token, token_map
             )
 
-            begin_end_maps = begin2token, end2token
-            return self.tlink_result_dict(
-                event=chemo,
-                window_mentions=window_mentions,
-                begin_end_maps=begin_end_maps,
-                base_tokens=base_tokens,
-            )
+            return {
+                window_mention: tlink_result(chemo, window_mention)
+                for window_mention in window_mentions
+            }
 
         patient_id, note_name = pt_and_note(cas)
         if len(list(relevant_timexes)) == 0:
@@ -442,6 +452,19 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         for chemo in positive_chemo_mentions:
             chemo_dtr, dtr_inst = dtr_result(chemo)
             tlink_dict = tlink_result_dict(chemo)
+            if len(tlink_dict) == 0:
+                instance = [
+                    document_creation_time,
+                    normalize_mention(chemo),
+                    chemo_dtr,
+                    "none",
+                    "none",
+                    "none",
+                    note_name,
+                    dtr_inst,
+                    "none",
+                ]
+                self.raw_events[patient_id].append(instance)
             for other_mention, tlink_inst_pair in tlink_dict.items():
                 tlink, tlink_inst = tlink_inst_pair
                 chemo_text = normalize_mention(chemo)
@@ -473,22 +496,3 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                     tlink_inst,
                 ]
                 self.raw_events[patient_id].append(instance)
-
-    def tlink_result_dict(
-        self,
-        event: FeatureStructure,
-        window_mentions: Generator[FeatureStructure, None, None],
-        begin_end_maps: Tuple[Dict[int, int], Dict[int, int]],
-        base_tokens: List[str],
-    ) -> Dict[FeatureStructure, Tuple[str, str]]:
-        begin2token, end2token = begin_end_maps
-        tlink_instances = (
-            get_tlink_instance(event, w_timex, base_tokens, begin2token, end2token)
-            for w_timex in window_mentions
-        )
-        return {
-            window_mention: (result["label"], inst)
-            for window_mention, result, inst in zip(
-                window_mentions, self.tlink_classifier(tlink_instances), tlink_instances
-            )
-        }

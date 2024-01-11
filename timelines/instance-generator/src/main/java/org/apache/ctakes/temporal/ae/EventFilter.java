@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
 @PipeBitInfo(
@@ -53,12 +54,14 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
     @Override
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
         try {
-            JCasUtil.select( jCas, EventMention.class )
+            Collection<EventMention> removals = JCasUtil.select( jCas, EventMention.class )
                 .stream()
                 // TODO filter by meds / TUI T121
                 // or actually is it TUI T061 ?
                 .filter( this::toRemove )
-                .forEach( EventMention::removeFromIndexes );
+                .collect( Collectors.toList() );
+
+                removals.forEach( EventMention::removeFromIndexes );
         } catch ( Exception e ){
             throw new AnalysisEngineProcessException(e);
         }
