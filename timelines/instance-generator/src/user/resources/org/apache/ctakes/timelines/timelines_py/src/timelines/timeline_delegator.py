@@ -10,15 +10,8 @@ from ctakes_pbj.component import cas_annotator
 from ctakes_pbj.type_system import ctakes_types
 from typing import List, Tuple, Dict, Optional, Generator, Iterator, Union, Set
 from cassis.typesystem import (
-    # FEATURE_BASE_NAME_HEAD,
-    # TYPE_NAME_FS_ARRAY,
-    # TYPE_NAME_FS_LIST,
-    # TYPE_NAME_SOFA,
     FeatureStructure,
     Type,
-    # TypeCheckError,
-    # TypeSystem,
-    # TypeSystemMode,
 )
 
 from cassis.cas import Cas
@@ -30,17 +23,6 @@ DTR_WINDOW_RADIUS = 10
 MAX_TLINK_DISTANCE = 60
 TLINK_PAD_LENGTH = 2
 MODEL_MAX_LEN = 512
-SPECIAL_TOKENS = [
-    "<e>",
-    "</e>",
-    "<a1>",
-    "</a1>",
-    "<a2>",
-    "</a2>",
-    "<cr>",
-    "<neg>",
-    "<newline>",
-]
 CHEMO_TUI = "T061"
 
 
@@ -149,12 +131,13 @@ def timexes_with_normalization(
 
 def get_tlink_instance(
     event: FeatureStructure,
-    timex: FeatureStructure,
+    other_mention: FeatureStructure,
+    is_timex: bool,
     tokens: List[str],
     begin2token: Dict[int, int],
     end2token: Dict[int, int],
 ) -> str:
-    # Have an event and a timex which are up to 60 tokens apart from each other
+    # Have an event and a timex/other event which are up to 60 tokens apart from each other
     # have two tokens before first annotation, first annotation plus tags
     # then all the text between the two annotations
     # second annotation plus tags, the last two tokens after the second annotation
@@ -162,19 +145,19 @@ def get_tlink_instance(
     event_end = end2token[event.end] + 1
     event_tags = ("<e>", "</e>")
     event_packet = (event_begin, event_end, event_tags)
-    timex_begin = begin2token[timex.begin]
-    timex_end = end2token[timex.end] + 1
-    timex_tags = ("<t>", "</t>")
-    timex_packet = (timex_begin, timex_end, timex_tags)
+    other_mention_begin = begin2token[other_mention.begin]
+    other_mention_end = end2token[other_mention.end] + 1
+    other_mention_tags = ("<t>", "</t>")
+    other_mention_packet = (other_mention_begin, other_mention_end, other_mention_tags)
 
     first_packet, second_packet = sorted(
-        (event_packet, timex_packet), key=lambda s: s[0]
+        (event_packet, other_mention_packet), key=lambda s: s[0]
     )
     (first_begin, first_end, first_tags) = first_packet
-    (first_open_tag, first_close_tag) = first_tags
+    (first_open_tag, first_close_tag) = first_tags if is_timex else ("<e1>", "</e1>")
 
     (second_begin, second_end, second_tags) = second_packet
-    (second_open_tag, second_close_tag) = second_tags
+    (second_open_tag, second_close_tag) = second_tags if is_timex else ("<e2>", "</e2>")
 
     # to avoid wrap arounds
     start_token_idx = max(0, first_begin - TLINK_PAD_LENGTH)
@@ -278,6 +261,18 @@ def get_tuis(event: FeatureStructure) -> Set[str]:
     return set()
 
 
+def get_pipeline(path, device):
+    return pipeline(
+        "text-classification",
+        model=path,
+        tokenizer=path,
+        device=device,
+        padding=True,
+        truncation=True,
+        max_length=MODEL_MAX_LEN,
+    )
+
+
 class TimelineDelegator(cas_annotator.CasAnnotator):
     def __init__(self):
         self._dtr_path = None
@@ -300,38 +295,23 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         else:
             main_device = -1
             print("GPU with CUDA is not available, defaulting to CPU")
-        self.dtr_classifier = pipeline(
-            "text-classification",
-            model=self._dtr_path,
-            tokenizer=self._dtr_path,
-            device=main_device,  # here and for the rest we specify the device since pipelines default to CPU
-            padding=True,
-            truncation=True,
-            max_length=MODEL_MAX_LEN,
+        self.dtr_classifier = get_pipeline(
+            self._dtr_path,
+            main_device,
         )
 
         print("DTR classifier loaded")
 
-        self.tlink_classifier = pipeline(
-            "text-classification",
-            model=self._tlink_path,
-            tokenizer=self._tlink_path,
-            device=main_device,
-            padding=True,
-            truncation=True,
-            max_length=MODEL_MAX_LEN,
+        self.tlink_classifier = get_pipeline(
+            self._tlink_path,
+            main_device,
         )
 
         print("TLINK classifier loaded")
 
         self.conmod_classifier = pipeline(
-            "text-classification",
-            model=self._conmod_path,
-            tokenizer=self._conmod_path,
-            device=main_device,
-            padding=True,
-            truncation=True,
-            max_length=MODEL_MAX_LEN,
+            self._conmod_path,
+            main_device,
         )
 
         print("Conmod classifier loaded")
@@ -424,8 +404,9 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             return label, inst
 
         def tlink_result(chemo, other_mention):
+            is_timex = other_mention.type = timex_type
             inst = get_tlink_instance(
-                chemo, other_mention, base_tokens, begin2token, end2token
+                chemo, other_mention, is_timex, base_tokens, begin2token, end2token
             )
             result = list(self.tlink_classifier(inst))[0]
             label = result["label"]
@@ -475,8 +456,8 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                     timex_text = "none"
                     other_chemo_text = normalize_mention(other_mention)
                 else:
-                    print(other_mention)
-                    print(other_mention.type)
+                    # print(other_mention)
+                    # print(other_mention.type)
                     raw_text = (
                         other_mention.get_covered_text().replace("\n", "")
                         if other_mention is not None
