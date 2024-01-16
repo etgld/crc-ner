@@ -420,9 +420,15 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 chemo, relevant_mentions, begin2token, end2token, token_map
             )
 
-            return {
+            raw_dict = {
                 window_mention: tlink_result(chemo, window_mention)
                 for window_mention in window_mentions
+            }
+
+            return {
+                mention: result
+                for mention, result in raw_dict.items()
+                if result != "none"
             }
 
         patient_id, note_name = pt_and_note(cas)
