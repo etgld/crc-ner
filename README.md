@@ -2,7 +2,7 @@
 
 Dockerizable source code for the author system for the [Chemotherapy Treatment Timelines Extraction from the Clinical Narrative](https://sites.google.com/view/chemotimelines2024/task-descriptions) shared task.
 
-## Overview of tools
+## Overview of Docker dependencies
 
 - [Docker Engine](https://docs.docker.com/install/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
@@ -33,4 +33,4 @@ docker compose up
 ```
 ## Questions and Technical Issues
 
-Please contact [Eli Goldner](mailto:eli.goldner@childrens.harvard.edu?subject=Timelines%20Docker%20Issue/Question)
+Please contact [Eli Goldner](mailto:eli.goldner@childrens.harvard.edu?subject=Timelines%20Docker%20Issue/Question) for non code-level issues or questions.  For issues in the code please open an issue through the repository page on GitHub.
