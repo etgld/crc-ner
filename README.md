@@ -1,7 +1,6 @@
-
 # ChemoTimelines Docker
 
-Contains source for creating a docker instance to run the timelines module.
+Dockerizable source code for the author system for the [Chemotherapy Treatment Timelines Extraction from the Clinical Narrative](https://sites.google.com/view/chemotimelines2024/task-descriptions) shared task.
 
 ## Overview of tools
 
@@ -32,3 +31,6 @@ docker compose build --no-cache
 ```
 docker compose up
 ```
+## Questions and Technical Issues
+
+Please contact [Eli Goldner](mailto:eli.goldner@childrens.harvard.edu/subject=Timelines Docker Issue/Question)
