@@ -33,4 +33,4 @@ docker compose up
 ```
 ## Questions and Technical Issues
 
-Please contact [Eli Goldner](mailto:eli.goldner@childrens.harvard.edu/subject=Timelines Docker Issue/Question)
+Please contact [Eli Goldner](mailto:eli.goldner@childrens.harvard.edu?subject=Timelines%20Docker%20Issue/Question)
