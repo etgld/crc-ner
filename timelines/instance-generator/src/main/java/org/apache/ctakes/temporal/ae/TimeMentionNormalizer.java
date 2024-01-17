@@ -69,7 +69,7 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
         DocumentPath documentPath = JCasUtil.select( jCas, DocumentPath.class ).iterator().next();
         final String fileName = FilenameUtils.getBaseName( documentPath.getDocumentPath() );
         if (_tui != null && !_tui.trim().isEmpty()){
-            bool hasRelevantTUIs = JCasUtil
+            boolean hasRelevantTUIs = JCasUtil
                 .select( jCas, EventMention.class )
                 .stream()
                 .map( OntologyConceptUtil::getUmlsConcepts )
