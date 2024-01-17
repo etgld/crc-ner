@@ -17,7 +17,7 @@ import java.util.Optional;
 
 @PipeBitInfo(
         name = "DCTAnnotator ( TxTimelines )",
-        description = " Gets the DCT either from the note filename ( if the filename conforms to spec ) or from the header if it's a UPMC note" //,
+        description = " Gets the DCT either from the note filename ( if the filename conforms to spec ) or from the header if it's a UPMC note"
 )
 
 public class DCTAnnotator extends org.apache.uima.fit.component.JCasAnnotator_ImplBase {

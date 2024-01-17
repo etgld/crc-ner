@@ -21,9 +21,16 @@ add PythonRunner Command="-m $TimelinesSecondStep -rq JavaToPy -o $OutputDirecto
 set minimumSpan=2
 set exclusionTags=“”
 
-// Pitt sentencing and tokenization
+// Full Pitt/DeepPhe sentencing and tokenization
 add SegmentsFromBracketedSectionTagsAnnotator
+add ParagraphAnnotator
 add SentenceDetectorAnnotatorBIO classifierJarPath=/org/apache/ctakes/core/models/sentdetect/model.jar
+add ListAnnotator
+add MrsDrSentenceJoiner
+add ParagraphSentenceFixer
+add ListParagraphFixer
+add ListSentenceFixer
+add EolSentenceFixer
 add TokenizerAnnotatorPTB
 
 // since the time annotation is (was?) out of wack
