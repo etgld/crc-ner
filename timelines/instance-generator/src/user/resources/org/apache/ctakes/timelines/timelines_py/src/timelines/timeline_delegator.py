@@ -309,7 +309,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
         print("TLINK classifier loaded")
 
-        self.conmod_classifier = pipeline(
+        self.conmod_classifier = get_pipeline(
             self._conmod_path,
             main_device,
         )
