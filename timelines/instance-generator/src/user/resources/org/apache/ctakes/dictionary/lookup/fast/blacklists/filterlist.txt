@@ -16,12 +16,14 @@ bp
 br
 bs
 bt
+ca
 cad
 calf
 cap
 cat
 cb
 cbi
+cc
 cd
 ce
 cef
@@ -50,6 +52,7 @@ ed
 eop
 et
 fa
+fam
 fat
 ff
 fl
@@ -58,6 +61,7 @@ fr
 gcs
 ht
 ice
+if
 id
 lam
 lvp
@@ -83,6 +87,7 @@ pm
 poc
 primary care provider
 primary health care provider
+pt
 rd
 sp
 system
