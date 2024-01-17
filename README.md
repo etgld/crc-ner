@@ -20,13 +20,16 @@ There are three mounted directories:
 
 ## Build docker image
 
-Under the project root directory:
+Under the project root directory ( you may need to use `sudo` ):
 
 ```
 docker compose build --no-cache
 ```
 
+
 ## Start a container
+
+You may need `sudo` here as well:
 
 ```
 docker compose up
