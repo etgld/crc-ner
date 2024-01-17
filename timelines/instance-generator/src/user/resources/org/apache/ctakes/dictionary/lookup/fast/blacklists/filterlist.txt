@@ -1,98 +1,98 @@
- aa
- abd
- abo
- ac
- ag
- ama
- ao
- ap
- atenolol
- av
- bactrim
- bd
- bid
- bmp
- bp
- br
- bs
- bt
- cad
- calf
- cap
- cat
- cb
- cbi
- cd
- ce
- cef
- cg
- chips
- ci
- cl
- cm
- cmp
- cnp
- cp
- ct
- cv
- cva
- cvp
- cx
- da
- de
- dh
- dp
- ds
- ec
- echo
- ecog
- ed
- eop
- et
- fa
- fat
- ff
- fl
- flap
- fr
- gcs
- ht
- ice
- id
- lam
- lvp
- m2
- mac
- map
- mc
- mcv
- md
- me
- mmm
- mv
- na
- ng
- pac
- pad
- pcp
- pe
- pen
- pet
- ph
- pm
- poc
- primary care provider
- primary health care provider
- rd
- sp
- system
- temp
- tip
- tl
- trim
- tv
- twice daily
- va
- vi
- vit
- xt
+aa
+abd
+abo
+ac
+ag
+ama
+ao
+ap
+atenolol
+av
+bactrim
+bd
+bid
+bmp
+bp
+br
+bs
+bt
+cad
+calf
+cap
+cat
+cb
+cbi
+cd
+ce
+cef
+cg
+chips
+ci
+cl
+cm
+cmp
+cnp
+cp
+ct
+cv
+cva
+cvp
+cx
+da
+de
+dh
+dp
+ds
+ec
+echo
+ecog
+ed
+eop
+et
+fa
+fat
+ff
+fl
+flap
+fr
+gcs
+ht
+ice
+id
+lam
+lvp
+m2
+mac
+map
+mc
+mcv
+md
+me
+mmm
+mv
+na
+ng
+pac
+pad
+pcp
+pe
+pen
+pet
+ph
+pm
+poc
+primary care provider
+primary health care provider
+rd
+sp
+system
+temp
+tip
+tl
+trim
+tv
+twice daily
+va
+vi
+vit
+xt

@@ -61,7 +61,7 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
 
     // @ConfigurationParameter( name = TimeMentionNormalizer.TIMEOUT, mandatory = false,
     //                          description = "Stop trying to normalize a TimeMention after this many seconds" )
-    private int _timeout = 15;
+    private int _timeout = 5;
     @Override
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
         final SourceData sourceData = SourceMetadataUtil.getOrCreateSourceData( jCas );
@@ -69,16 +69,15 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
         DocumentPath documentPath = JCasUtil.select( jCas, DocumentPath.class ).iterator().next();
         final String fileName = FilenameUtils.getBaseName( documentPath.getDocumentPath() );
         if (_tui != null && !_tui.trim().isEmpty()){
-            long relevantTUICount = JCasUtil
+            bool hasRelevantTUIs = JCasUtil
                 .select( jCas, EventMention.class )
                 .stream()
                 .map( OntologyConceptUtil::getUmlsConcepts )
                 .flatMap( Collection::stream )
                 .map( UmlsConcept::getTui )
-                .filter( tui -> tui.equals( _tui ) )
-                .collect( Collectors.counting() );
+                .anyMatch( tui -> tui.equals( _tui ) );
 
-            if ( relevantTUICount == 0 ){
+            if ( !hasRelevantTUIs ){
                 LOGGER.info(fileName + " : no events with TUI " + _tui + ", skipping to save time");
                 return;
             }
@@ -86,7 +85,7 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
 
         TimeSpan _DCT = null;
         if ( docTime == null || docTime.isEmpty() ){
-            LOGGER.warn( "Empty DCT for file " + fileName );
+            LOGGER.warn( fileName + ": Empty Document Creation Time" );
         } else {
             String[] docTimeComponents = docTime.split("-");
             // properly generated
@@ -104,29 +103,14 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
             }
         }
         final TimeSpan DCT = _DCT;
-        // JCasUtil.select( jCas, TimeMention.class ).forEach(
-        //     t -> normalize( DCT, fileName, t )
-        // );
         List<TimeMention> timeMentions = JCasUtil
             .select( jCas, TimeMention.class )
             .stream()
             .collect( Collectors.toList() );
 
-        LOGGER.info( "normalizing " + timeMentions.size() + " time expressions for " + fileName );
-        for ( TimeMention timeMention : ProgressBar.wrap( timeMentions, "Normalizing" ) ){
-            // try{
-            //     int success = timeLimiter.callUninterruptiblyWithTimeout(
-            //                                             () -> normalize( jCas, DCT, fileName, timeMention ),
-            //                                             _timeout,
-            //                                             TimeUnit.SECONDS
-            //                                             );
-            // } catch (Exception e){
-            //     String unnormalizedTimex = String.join(" ", timeMention.getCoveredText().split("\\s"));
-            //     LOGGER.error( " could not parse timex with covered text " + timeMention.getCoveredText() + " in " + _timeout + " seconds or less ");
-            // }
+        for ( TimeMention timeMention : ProgressBar.wrap( timeMentions, fileName + ": Normalizing TimeMentions" ) ){
             normalize( jCas, DCT, fileName, timeMention );
         }
-        LOGGER.info("finished normalizing " + timeMentions.size() + " time expressions for " + fileName);
     }
 
     private void normalize( JCas jCas, TimeSpan DCT, String fileName, TimeMention timeMention ){
@@ -143,11 +127,11 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
                         _timeout,
                         TimeUnit.SECONDS );
             } catch ( Exception ignored ){
-                LOGGER.error( "Timenorm could not parse timex " + timeMention.getCoveredText() + " in " + _timeout + " seconds or less");
+                LOGGER.error( fileName + ": Timenorm could not parse timex " + timeMention.getCoveredText() + " in " + _timeout + " seconds or less");
                 return;
             }
         } catch ( Exception ignored ){
-            LOGGER.error( "Timenorm failed to normalize timex " + unnormalizedTimex );
+            LOGGER.error( fileName + ": Timenorm failed to normalize timex " + unnormalizedTimex );
             return;
         }
         if ( normalizedTimex != null ){

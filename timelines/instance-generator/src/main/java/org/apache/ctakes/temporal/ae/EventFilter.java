@@ -99,13 +99,14 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
         boolean isFilterMatch = false;
         if ( !this.terms.isEmpty() ) {
             isFilterMatch = this.terms.stream()
-                    .anyMatch(
-                            term -> eventMention
-                                    .getCoveredText()
-                                    .toLowerCase()
-                                    // .contains(term)
-                                    .equals( term )
-                    );
+                .anyMatch(
+                          term -> eventMention
+                          .getCoveredText()
+                          .trim()
+                          .toLowerCase()
+                          // .contains(term)
+                          .equals( term )
+                          );
         }
         return isFilterMatch; // || isUncertain; //isHypothetical;
     }
@@ -114,13 +115,14 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
         if ( filterList != null && !filterList.isEmpty() ) {
             try ( InputStream descriptorStream = FileLocator.getAsStream( filterList ) ) {
                 return new BufferedReader(
-                        new InputStreamReader(
-                                descriptorStream,
-                                StandardCharsets.UTF_8
-                        )
-                ).lines()
-                        .map( String::toLowerCase )
-                        .collect( Collectors.toSet() );
+                                          new InputStreamReader(
+                                                                descriptorStream,
+                                                                StandardCharsets.UTF_8
+                                                                )
+                                          ).lines()
+                    .map( String::toLowerCase )
+                    .map( String::trim )
+                    .collect( Collectors.toSet() );
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
             }

@@ -428,7 +428,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             return {
                 mention: result
                 for mention, result in raw_dict.items()
-                if result != "none"
+                if result[0] != "none"
             }
 
         patient_id, note_name = pt_and_note(cas)
