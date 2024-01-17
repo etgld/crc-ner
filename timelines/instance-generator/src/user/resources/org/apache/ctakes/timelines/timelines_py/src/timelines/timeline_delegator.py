@@ -404,7 +404,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             return label, inst
 
         def tlink_result(chemo, other_mention):
-            is_timex = other_mention.type = timex_type
+            is_timex = other_mention.type == timex_type
             inst = get_tlink_instance(
                 chemo, other_mention, is_timex, base_tokens, begin2token, end2token
             )
