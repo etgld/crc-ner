@@ -346,7 +346,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         else:
             patient_id, note_name = pt_and_note(cas)
             print(
-                f"No chemotherapy mentions ( using TUI: {CHEMO_TUI} ) found in patient {patient_id} note {note_name} skipping"
+                f"No chemotherapy mentions ( using TUI: {CHEMO_TUI} ) found in patient {patient_id} note {note_name}  - skipping"
             )
             # mostly just to create the key in the dictionary
             self.raw_events[patient_id].append([])
@@ -362,6 +362,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 columns=OUTPUT_COLUMNS,
             )
             pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
+        exit()
 
     def _write_raw_timelines(self, cas: Cas, proc_mentions: List[FeatureStructure]):
         conmod_instances = (get_conmod_instance(chemo, cas) for chemo in proc_mentions)
@@ -379,12 +380,12 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         patient_id, note_name = pt_and_note(cas)
         if len(actual_proc_mentions) > 0:
             print(
-                f"Found concrete chemotherapy mentions in patient {patient_id} note {note_name} proceeding"
+                f"Found concrete chemotherapy mentions in patient {patient_id} note {note_name} - proceeding"
             )
             self._write_actual_proc_mentions(cas, actual_proc_mentions)
         else:
             print(
-                f"No concrete chemotherapy mentions found in patient {patient_id} note {note_name} skipping"
+                f"No concrete chemotherapy mentions found in patient {patient_id} note {note_name} - skipping"
             )
             self.raw_events[patient_id].append([])
 
