@@ -24,6 +24,17 @@ MAX_TLINK_DISTANCE = 60
 TLINK_PAD_LENGTH = 2
 MODEL_MAX_LEN = 512
 CHEMO_TUI = "T061"
+OUTPUT_COLUMNS = [
+    "DCT",
+    "chemo",
+    "dtr",
+    "normed_timex",
+    "other_chemo",
+    "tlink",
+    "note_name",
+    "dtr_inst",
+    "tlink_inst",
+]
 
 
 def normalize_mention(mention: Union[FeatureStructure, None]) -> str:
@@ -345,18 +356,10 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         for pt_id, records in self.raw_events.items():
             print(f"Writing results for {pt_id}")
             pt_df = pd.DataFrame.from_records(
-                filter(len, records),
-                columns=[
-                    "DCT",
-                    "chemo",
-                    "dtr",
-                    "normed_timex",
-                    "other_chemo",
-                    "tlink",
-                    "note_name",
-                    "dtr_inst",
-                    "tlink_inst",
-                ],
+                filter(
+                    len, records
+                ),  # don't write empty instances that were used to populate the dictionary in case no concrete chemo mentions were found
+                columns=OUTPUT_COLUMNS,
             )
             pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
 
