@@ -354,7 +354,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
     def collection_process_complete(self):
         print("Finished processing notes")
         for pt_id, records in self.raw_events.items():
-            print(f"Writing results for {pt_id}")
+            print(f"Writing results for {pt_id} in {os.getcwd()}")
             pt_df = pd.DataFrame.from_records(
                 filter(
                     len, records
