@@ -26,10 +26,13 @@ MODEL_MAX_LEN = 512
 CHEMO_TUI = "T061"
 OUTPUT_COLUMNS = [
     "DCT",
-    "chemo",
+    "patient_id",
+    "chemo_text",
+    "chemo_annotation_id",
     "dtr",
     "normed_timex",
     "other_chemo",
+    "other_annotation_id",
     "tlink",
     "note_name",
     "dtr_inst",
@@ -38,10 +41,10 @@ OUTPUT_COLUMNS = [
 
 
 def normalize_mention(mention: Union[FeatureStructure, None]) -> str:
-    if mention is not None:
-        raw_mention_text = mention.get_covered_text()
-        return raw_mention_text.replace("\n", "")
-    return "ERROR"
+    if mention is None:
+        return "ERROR"
+    raw_mention_text = mention.get_covered_text()
+    return raw_mention_text.replace("\n", "")
 
 
 def tokens_and_map(
@@ -191,7 +194,6 @@ def get_tlink_instance(
         + tokens[second_end:end_token_idx]
     )
     result = " ".join(str_builder)
-    # print(f"tlink result: {result}")
     return result
 
 
@@ -203,7 +205,6 @@ def get_dtr_instance(
 ) -> str:
     event_begin = begin2token[event.begin]
     event_end = end2token[event.end] + 1
-    # window_tokens = tokens[event_begin - window_radius:event_end + window_radius - 1]
     str_builder = (
         tokens[event_begin - DTR_WINDOW_RADIUS : event_begin]
         + ["<e>"]
@@ -238,8 +239,6 @@ def get_tlink_window_mentions(
         end_inside = char_window_begin <= mention.end <= char_window_end
         return begin_inside and end_inside
 
-    # return [mention for mention in cas.select(mention_type) if in_window(mention)]
-
     for mention in relevant_mentions:
         if in_window(mention):
             yield mention
@@ -267,9 +266,9 @@ def get_tuis(event: FeatureStructure) -> Set[str]:
 
     ont_concept_arr = getattr(event, "ontologyConceptArr", None)
     elements = getattr(ont_concept_arr, "elements", [])
-    if len(elements) > 0:
-        return {tui for tui in map(get_tui, elements) if tui is not None}
-    return set()
+    if len(elements) == 0:
+        return set()
+    return {tui for tui in map(get_tui, elements) if tui is not None}
 
 
 def get_pipeline(path, device):
@@ -401,6 +400,17 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         base_tokens, token_map = tokens_and_map(cas, mode="dtr")
         begin2token, end2token = invert_map(token_map)
 
+        # Needed for Jiarui's deduplication algorithm
+        annotation_ids = {
+            annotation: index
+            for index, annotation in enumerate(
+                sorted(
+                    chain.from_iterable((positive_chemo_mentions, relevant_timexes)),
+                    key=lambda annotation: annotation.begin,
+                )
+            )
+        }
+
         def dtr_result(chemo):
             inst = get_dtr_instance(chemo, base_tokens, begin2token, end2token)
             result = list(self.dtr_classifier(inst))[0]
@@ -446,8 +456,11 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             if len(tlink_dict) == 0:
                 instance = [
                     document_creation_time,
+                    patient_id,
                     normalize_mention(chemo),
+                    annotation_ids[chemo],
                     chemo_dtr,
+                    "none",
                     "none",
                     "none",
                     "none",
@@ -477,10 +490,13 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                     other_chemo_text = "TYPE ERROR"
                 instance = [
                     document_creation_time,
+                    patient_id,
                     chemo_text,
+                    annotation_ids[chemo],
                     chemo_dtr,
                     timex_text,
                     other_chemo_text,
+                    annotation_ids[other_mention],
                     tlink,
                     note_name,
                     dtr_inst,
