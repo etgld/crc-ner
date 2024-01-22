@@ -1,6 +1,7 @@
 import os
 import logging
 import torch
+import sys
 import pandas as pd
 from pprint import pprint
 
@@ -40,17 +41,18 @@ OUTPUT_COLUMNS = [
 ]
 
 LABEL_TO_INVERTED_LABEL = {
-    "BEFORE": "AFTER",
-    "AFTER": "BEFORE",
-    "BEGINS-ON": "ENDS-ON",
-    "ENDS-ON": "BEGINS-ON",
-    "OVERLAP": "OVERLAP",
-    "CONTAINS": "CONTAINS-1",
-    "NOTED-ON": "NOTED-ON-1",
-    "CONTAINS-1": "CONTAINS",
-    "NOTED-ON-1": "NOTED-ON",
-    "CONTAINS-SUBEVENT": "CONTAINS-SUBEVENT-1",
-    "CONTAINS-SUBEVENT-1": "CONTAINS-SUBEVENT",
+    "before": "after",
+    "after": "before",
+    "begins-on": "ends-on",
+    "ends-on": "begins-on",
+    "overlap": "overlap",
+    "contains": "contains-1",
+    "noted-on": "noted-on-1",
+    "contains-1": "contains",
+    "noted-on-1": "noted-on",
+    "contains-subevent": "contains-subevent-1",
+    "contains-subevent-1": "contains-subevent",
+    "none": "none",
 }
 
 
@@ -269,8 +271,9 @@ def deleted_neighborhood(
 def pt_and_note(cas: Cas):
     document_path_collection = cas.select(ctakes_types.DocumentPath)
     document_path = list(document_path_collection)[0].documentPath
-    patient_id = os.path.basename(os.path.dirname(document_path))
+    # patient_id = os.path.basename(os.path.dirname(document_path))
     note_name = os.path.basename(document_path).split(".")[0]
+    patient_id = note_name.split("_")[0]
     return patient_id, note_name
 
 
@@ -374,8 +377,9 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 ),  # don't write empty instances that were used to populate the dictionary in case no concrete chemo mentions were found
                 columns=OUTPUT_COLUMNS,
             )
-            pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
-        exit()
+            # pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
+            pt_df.to_csv("output_raw.tsv", index=False, sep="\t")
+        sys.exit()
 
     def _write_raw_timelines(self, cas: Cas, proc_mentions: List[FeatureStructure]):
         conmod_instances = (get_conmod_instance(chemo, cas) for chemo in proc_mentions)
