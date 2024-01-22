@@ -369,16 +369,25 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
     def collection_process_complete(self):
         print("Finished processing notes")
-        for pt_id, records in self.raw_events.items():
-            print(f"Writing results for {pt_id} in {os.getcwd()}")
-            pt_df = pd.DataFrame.from_records(
-                filter(
-                    len, records
-                ),  # don't write empty instances that were used to populate the dictionary in case no concrete chemo mentions were found
-                columns=OUTPUT_COLUMNS,
-            )
-            # pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
-            pt_df.to_csv("output_raw.tsv", index=False, sep="\t")
+        # for pt_id, records in self.raw_events.items():
+        #     print(f"Writing results for {pt_id} in {os.getcwd()}")
+        #     pt_df = pd.DataFrame.from_records(
+        #         filter(
+        #             len, records
+        #         ),  # don't write empty instances that were used to populate the dictionary in case no concrete chemo mentions were found
+        #         columns=OUTPUT_COLUMNS,
+        #     )
+        #     # pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
+        #     pt_df.to_csv("output_raw.tsv", index=False, sep="\t")
+        print(f"Writing results for all input in {os.getcwd()}")
+        pt_df = pd.DataFrame.from_records(
+            filter(
+                len, chain.from_iterable(self.raw_events.values())
+            ),  # don't write empty instances that were used to populate the dictionary in case no concrete chemo mentions were found
+            columns=OUTPUT_COLUMNS,
+        )
+        # pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
+        pt_df.to_csv("output_raw.tsv", index=False, sep="\t")
         sys.exit()
 
     def _write_raw_timelines(self, cas: Cas, proc_mentions: List[FeatureStructure]):
