@@ -418,16 +418,6 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         base_tokens, token_map = tokens_and_map(cas, mode="dtr")
         begin2token, end2token = invert_map(token_map)
 
-        # Needed for Jiarui's deduplication algorithm
-        annotation_ids = {
-            annotation: index
-            for index, annotation in enumerate(
-                sorted(
-                    chain.from_iterable((positive_chemo_mentions, relevant_timexes)),
-                    key=lambda annotation: annotation.begin,
-                )
-            )
-        }
 
         def dtr_result(chemo):
             inst = get_dtr_instance(chemo, base_tokens, begin2token, end2token)
@@ -466,6 +456,17 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             }
 
         patient_id, note_name = pt_and_note(cas)
+
+        # Needed for Jiarui's deduplication algorithm
+        annotation_ids = {
+            annotation: f"{index}@e@{note_name}@system"
+            for index, annotation in enumerate(
+                sorted(
+                    chain.from_iterable((positive_chemo_mentions, relevant_timexes)),
+                    key=lambda annotation: annotation.begin,
+                )
+            )
+        }
         if len(list(relevant_timexes)) == 0:
             print(
                 f"WARNING: No normalized timexes discovered in {patient_id} file {note_name}"
