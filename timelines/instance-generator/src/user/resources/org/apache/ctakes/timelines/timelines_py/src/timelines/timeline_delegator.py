@@ -39,6 +39,20 @@ OUTPUT_COLUMNS = [
     "tlink_inst",
 ]
 
+LABEL_TO_INVERTED_LABEL = {
+    "BEFORE": "AFTER",
+    "AFTER": "BEFORE",
+    "BEGINS-ON": "ENDS-ON",
+    "ENDS-ON": "BEGINS-ON",
+    "OVERLAP": "OVERLAP",
+    "CONTAINS": "CONTAINS-1",
+    "NOTED-ON": "NOTED-ON-1",
+    "CONTAINS-1": "CONTAINS",
+    "NOTED-ON-1": "NOTED-ON",
+    "CONTAINS-SUBEVENT": "CONTAINS-SUBEVENT-1",
+    "CONTAINS-SUBEVENT-1": "CONTAINS-SUBEVENT",
+}
+
 
 def normalize_mention(mention: Union[FeatureStructure, None]) -> str:
     if mention is None:
@@ -424,6 +438,8 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             )
             result = list(self.tlink_classifier(inst))[0]
             label = result["label"]
+            if other_mention.begin < chemo.begin:
+                label = LABEL_TO_INVERTED_LABEL[label]
             return label, inst
 
         def tlink_result_dict(chemo):
