@@ -348,7 +348,6 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         arg_parser.add_arg("--tlink_path")
         arg_parser.add_arg("--conmod_path")
 
-    # Process Sentences, adding Times, Events and TLinks found by cNLPT.
     def process(self, cas: Cas):
         proc_mentions = [
             event

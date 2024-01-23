@@ -38,7 +38,7 @@ public class EventFilter extends org.apache.uima.fit.component.JCasAnnotator_Imp
 
     @ConfigurationParameter(
             name = PARAM_FILTER_LIST,
-            description = "The way we store files for processing.  Aligned pair of directories ",
+            description = "Path to the newline separated file of terms to filter out",
             mandatory = false
     )
     private String filterList;

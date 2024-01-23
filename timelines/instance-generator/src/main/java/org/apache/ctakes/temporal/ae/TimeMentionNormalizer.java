@@ -39,46 +39,69 @@ import com.google.common.util.concurrent.SimpleTimeLimiter;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-// @PipeBitInfo(
-//         name = "Event Time Anafora Writer",
-//         description = "Writes Temporal Events and Times in Anafora format."
-// )
+@PipeBitInfo(
+        name = "TimeMentionNormalizer",
+        description = "Normalizes time expressions",
+        dependencies = { PipeBitInfo.TypeProduct.EVENT, PipeBitInfo.TypeProduct.TIMEX }
+)
 
 
 public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnnotator_ImplBase {
     static private final Logger LOGGER = Logger.getLogger( "TimeMentionNormalizer" );
+
+    // generalize to multiple at some point, check how the dictionary system
+    // does it with filtering based on syntactic category
+    public static final String PARAM_TUI = "tui";
+
+    @ConfigurationParameter(
+                            name = PARAM_TUI,
+                            description = "The way we store files for processing.  Aligned pair of directories ",
+                            defaultValue = "T061",
+                            mandatory = false
+    )
+    private String tui;
+
+    public static final String PARAM_TIMEOUT = "timeout";
+
+    @ConfigurationParameter(
+                            name = PARAM_TUI,
+                            description = "The way we store files for processing.  Aligned pair of directories ",
+                            defaultValue = 5,
+                            mandatory = false
+    )
+    private int timeout;
+    private Set<String> tuis;
+
     static private final TemporalExpressionParser normalizer = TemporalExpressionParser.en();
     static private final TimeLimiter timeLimiter = SimpleTimeLimiter.create(Executors.newSingleThreadExecutor());
 
-    // static String SKIP_NO_TUI = "noTuiSkip";
+    @Override
+    public void initialize( UimaContext context ) throws ResourceInitializationException {
+        super.initialize( context );
+        this.tuis = new HashSet<String>();
+        final String[] tuiArr = tuis.split( "," );
+        for ( String tui : tuiArr ) {
+            this.tuis.add( tui.toUpperCase() );
+        }
+    }
 
-    // static String TIMEOUT = "timeout";
-
-    // @ConfigurationParameter( name = TimeMentionNormalizer.SKIP_NO_TUI, mandatory = false,
-    //                          description = "Skip processing notes that have no relevant event mentions" )
-    private String _tui = "T061";
-
-
-    // @ConfigurationParameter( name = TimeMentionNormalizer.TIMEOUT, mandatory = false,
-    //                          description = "Stop trying to normalize a TimeMention after this many seconds" )
-    private int _timeout = 5;
     @Override
     public void process( JCas jCas ) throws AnalysisEngineProcessException {
         final SourceData sourceData = SourceMetadataUtil.getOrCreateSourceData( jCas );
         final String docTime = sourceData.getSourceOriginalDate();
         DocumentPath documentPath = JCasUtil.select( jCas, DocumentPath.class ).iterator().next();
         final String fileName = FilenameUtils.getBaseName( documentPath.getDocumentPath() );
-        if (_tui != null && !_tui.trim().isEmpty()){
+        if (tui != null && !tui.trim().isEmpty()){
             boolean hasRelevantTUIs = JCasUtil
                 .select( jCas, EventMention.class )
                 .stream()
                 .map( OntologyConceptUtil::getUmlsConcepts )
                 .flatMap( Collection::stream )
                 .map( UmlsConcept::getTui )
-                .anyMatch( tui -> tui.equals( _tui ) );
+                .anyMatch( tui -> this.tuis.contains( tui ) );
 
             if ( !hasRelevantTUIs ){
-                LOGGER.info(fileName + " : no events with TUI " + _tui + ", skipping to save time");
+                LOGGER.info(fileName + " : no events with TUI " + tui + ", skipping to save time");
                 return;
             }
         }
@@ -103,10 +126,10 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
             }
         }
         final TimeSpan DCT = _DCT;
-        List<TimeMention> timeMentions = JCasUtil
-            .select( jCas, TimeMention.class )
-            .stream()
-            .collect( Collectors.toList() );
+        Collection<TimeMention> timeMentions = JCasUtil
+            .select( jCas, TimeMention.class );
+            // .stream()
+            // .collect( Collectors.toList() );
 
         for ( TimeMention timeMention : ProgressBar.wrap( timeMentions, fileName + ": Normalizing TimeMentions" ) ){
             normalize( jCas, DCT, fileName, timeMention );
@@ -124,7 +147,7 @@ public class TimeMentionNormalizer extends org.apache.uima.fit.component.JCasAnn
                 normalizedTimex = timeLimiter
                     .callUninterruptiblyWithTimeout(
                         () -> normalizer.parse( unnormalizedTimex, DCT ).get(),
-                        _timeout,
+                        timeout,
                         TimeUnit.SECONDS );
             } catch ( Exception ignored ){
                 LOGGER.error( fileName + ": Timenorm could not parse timex " + timeMention.getCoveredText() + " in " + _timeout + " seconds or less");
