@@ -32,8 +32,7 @@ OUTPUT_COLUMNS = [
     "chemo_annotation_id",
     "dtr",
     "normed_timex",
-    "other_chemo",
-    "other_annotation_id",
+    "timex_annotation_id",
     "tlink",
     "note_name",
     "dtr_inst",
@@ -161,8 +160,8 @@ def timexes_with_normalization(
 
 def get_tlink_instance(
     event: FeatureStructure,
-    other_mention: FeatureStructure,
-    is_timex: bool,
+    timex: FeatureStructure,
+    # is_timex: bool,
     tokens: List[str],
     begin2token: Dict[int, int],
     end2token: Dict[int, int],
@@ -175,19 +174,22 @@ def get_tlink_instance(
     event_end = end2token[event.end] + 1
     event_tags = ("<e>", "</e>")
     event_packet = (event_begin, event_end, event_tags)
-    other_mention_begin = begin2token[other_mention.begin]
-    other_mention_end = end2token[other_mention.end] + 1
-    other_mention_tags = ("<t>", "</t>")
-    other_mention_packet = (other_mention_begin, other_mention_end, other_mention_tags)
+    timex_begin = begin2token[timex.begin]
+    timex_end = end2token[timex.end] + 1
+    timex_tags = ("<t>", "</t>")
+    timex_packet = (timex_begin, timex_end, timex_tags)
 
     first_packet, second_packet = sorted(
-        (event_packet, other_mention_packet), key=lambda s: s[0]
+        (event_packet, timex_packet), key=lambda s: s[0]
     )
     (first_begin, first_end, first_tags) = first_packet
-    (first_open_tag, first_close_tag) = first_tags if is_timex else ("<e1>", "</e1>")
+    (first_open_tag, first_close_tag) = first_tags  # if is_timex else ("<e1>", "</e1>")
 
     (second_begin, second_end, second_tags) = second_packet
-    (second_open_tag, second_close_tag) = second_tags if is_timex else ("<e2>", "</e2>")
+    (
+        second_open_tag,
+        second_close_tag,
+    ) = second_tags  # if is_timex else ("<e2>", "</e2>")
 
     # to avoid wrap arounds
     start_token_idx = max(0, first_begin - TLINK_PAD_LENGTH)
@@ -234,7 +236,7 @@ def get_dtr_instance(
 
 def get_tlink_window_mentions(
     event: FeatureStructure,
-    relevant_mentions: Iterator[FeatureStructure],
+    relevant_mentions: List[FeatureStructure],
     begin2token: Dict[int, int],
     end2token: Dict[int, int],
     token2char: List[Tuple[int, int]],
@@ -336,12 +338,13 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
 
         print("TLINK classifier loaded")
 
-        self.conmod_classifier = get_pipeline(
-            self._conmod_path,
-            main_device,
-        )
+        if self._conmod_path is not None:
+            self.conmod_classifier = get_pipeline(
+                self._conmod_path,
+                main_device,
+            )
 
-        print("Conmod classifier loaded")
+            print("Conmod classifier loaded")
 
     def declare_params(self, arg_parser):
         arg_parser.add_arg("--dtr_path")
@@ -387,9 +390,17 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         )
         # pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
         pt_df.to_csv("output_raw.tsv", index=False, sep="\t")
+        print("Finished writing")
         sys.exit()
 
     def _write_raw_timelines(self, cas: Cas, proc_mentions: List[FeatureStructure]):
+        patient_id, note_name = pt_and_note(cas)
+        if self._conmod_path is None:
+            print(
+                f"Modality filtering turned off, proceeding for patient {patient_id} note {note_name}"
+            )
+            self._write_actual_proc_mentions(cas, proc_mentions)
+            return
         conmod_instances = (get_conmod_instance(chemo, cas) for chemo in proc_mentions)
 
         conmod_classifications = (
@@ -402,7 +413,6 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             if modality == "ACTUAL"
         ]
 
-        patient_id, note_name = pt_and_note(cas)
         if len(actual_proc_mentions) > 0:
             print(
                 f"Found concrete chemotherapy mentions in patient {patient_id} note {note_name} - proceeding"
@@ -426,41 +436,27 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         base_tokens, token_map = tokens_and_map(cas, mode="dtr")
         begin2token, end2token = invert_map(token_map)
 
-
         def dtr_result(chemo):
             inst = get_dtr_instance(chemo, base_tokens, begin2token, end2token)
             result = list(self.dtr_classifier(inst))[0]
             label = result["label"]
             return label, inst
 
-        def tlink_result(chemo, other_mention):
-            is_timex = other_mention.type == timex_type
-            inst = get_tlink_instance(
-                chemo, other_mention, is_timex, base_tokens, begin2token, end2token
-            )
+        def tlink_result(chemo, timex):
+            inst = get_tlink_instance(chemo, timex, base_tokens, begin2token, end2token)
             result = list(self.tlink_classifier(inst))[0]
             label = result["label"]
-            if other_mention.begin < chemo.begin:
+            if timex.begin < chemo.begin:
                 label = LABEL_TO_INVERTED_LABEL[label]
             return label, inst
 
         def tlink_result_dict(chemo):
-            relevant_mentions = chain.from_iterable(
-                (deleted_neighborhood(chemo, positive_chemo_mentions), relevant_timexes)
-            )
             window_mentions = get_tlink_window_mentions(
-                chemo, relevant_mentions, begin2token, end2token, token_map
+                chemo, relevant_timexes, begin2token, end2token, token_map
             )
-
-            raw_dict = {
+            return {
                 window_mention: tlink_result(chemo, window_mention)
                 for window_mention in window_mentions
-            }
-
-            return {
-                mention: result
-                for mention, result in raw_dict.items()
-                if result[0] != "none"
             }
 
         patient_id, note_name = pt_and_note(cas)
@@ -482,41 +478,10 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         for chemo in positive_chemo_mentions:
             chemo_dtr, dtr_inst = dtr_result(chemo)
             tlink_dict = tlink_result_dict(chemo)
-            if len(tlink_dict) == 0:
-                instance = [
-                    document_creation_time,
-                    patient_id,
-                    normalize_mention(chemo),
-                    annotation_ids[chemo],
-                    chemo_dtr,
-                    "none",
-                    "none",
-                    "none",
-                    "none",
-                    note_name,
-                    dtr_inst,
-                    "none",
-                ]
-                self.raw_events[patient_id].append(instance)
-            for other_mention, tlink_inst_pair in tlink_dict.items():
+            for timex, tlink_inst_pair in tlink_dict.items():
                 tlink, tlink_inst = tlink_inst_pair
                 chemo_text = normalize_mention(chemo)
-                if other_mention.type == timex_type:
-                    timex_text = other_mention.time.normalizedForm
-                    other_chemo_text = "none"
-                elif other_mention.type == event_type:
-                    timex_text = "none"
-                    other_chemo_text = normalize_mention(other_mention)
-                else:
-                    # print(other_mention)
-                    # print(other_mention.type)
-                    raw_text = (
-                        other_mention.get_covered_text().replace("\n", "")
-                        if other_mention is not None
-                        else "ERROR"
-                    )
-                    timex_text = f"TYPE ERROR {raw_text}"
-                    other_chemo_text = "TYPE ERROR"
+                timex_text = timex.time.normalizedForm
                 instance = [
                     document_creation_time,
                     patient_id,
@@ -524,8 +489,7 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                     annotation_ids[chemo],
                     chemo_dtr,
                     timex_text,
-                    other_chemo_text,
-                    annotation_ids[other_mention],
+                    annotation_ids[timex],
                     tlink,
                     note_name,
                     dtr_inst,

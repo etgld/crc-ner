@@ -12,7 +12,9 @@ add PythonRunner Command="-m pip install resources/org/apache/ctakes/timelines/t
 
 set TimelinesSecondStep=timelines.timelines_pipeline
 
-add PythonRunner Command="-m $TimelinesSecondStep -rq JavaToPy -o $OutputDirectory --dtr_path $DTRModelPath --conmod_path $ModalityModelPath --tlink_path $TlinkModelPath"
+// add PythonRunner Command="-m $TimelinesSecondStep -rq JavaToPy -o $OutputDirectory --dtr_path $DTRModelPath --conmod_path $ModalityModelPath --tlink_path $TlinkModelPath"
+
+add PythonRunner Command="-m $TimelinesSecondStep -rq JavaToPy -o $OutputDirectory --dtr_path $DTRModelPath --tlink_path $TlinkModelPath"
 
 set minimumSpan=2
 set exclusionTags=“”
@@ -38,7 +40,8 @@ add DCTAnnotator
 // loading this after the dictionaries so
 // we no longer waste time normalizing timexes
 // for files with no chemos
-add TimeMentionNormalizer
+// add TimeMentionNormalizer tuis=T061 timeout=25
+add TimeMentionNormalizer timeout=10
 
 // add PbjJmsSender SendQueue=JavaToPy SendStop=no
 add PbjJmsSender SendQueue=JavaToPy SendStop=yes
