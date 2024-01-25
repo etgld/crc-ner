@@ -154,6 +154,19 @@ add ContextDependentTokenizerAnnotator
 load DictionarySubPipe
 ```
 `minimumSpan` and `exclusionTags` are both configuration parameters for the dictionary lookup module, we don't exclude any parts of speech for lookup and want only to retrieve turns of at least two characters.  The `DefaultTokenizerPipeline` annotates each CAS for paragraphs, sentences, and tokens.  The `ContextDependentTokenizerAnnotator` depends on annotated base tokens and identifies basic numerical expressions for dates and times.  The `DictionarySubPipe` module loads the dictionary configuration XML provided with the `-l` tag in the execution of the main Jar file.          
+```
+add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
+add DCTAnnotator
+add TimeMentionNormalizer timeout=10
+```
+`BackwardsTimeAnnotator` invokes a SVM-based classifier to identify additional temporal expressions.  `DCTAnnotator` identifies the document creation time for each note, which is needed for normalizing relative temporal expressions.  `TimeMentionNormalizer` invokes the Timenorm context free grammar parser to normalize all temporal expressions possible.  Some default behaviors with this are worth noting, firstly, to save processing time, by default we skip normalizing temporal expressions from notes which do not have any chemotherapy mentions, secondly, due to some issues with processing time for noisy temporal expressions, there is a timeout parameter for when to quit an attempted normalization parse.  Unless specified the timeout defaults to five seconds.
+
+And finally:
+```
+add PbjJmsSender SendQueue=JavaToPy SendStop=yes
+```
+Sends the CASes which have been processed by the Java annotators to the Python annotator via the ActiveMQ send queue.
+
 ## Questions and Technical Issues
 
 Please contact [Eli Goldner](mailto:eli.goldner@childrens.harvard.edu?subject=Timelines%20Docker%20Issue/Question) for non code-level issues or questions.  For issues in the code please open an issue through the repository page on GitHub.
