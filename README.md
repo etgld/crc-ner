@@ -75,12 +75,6 @@ The `org.apache.ctakes.core.pipeline.PiperFileRunner` class is the entry point. 
 ### (Optional) running the core command outside of the Docker
 
 Add to the core command `-v <path to conda environment>** to run with a specified conda environment.  Ideally, cTAKES should start the ActiveMQ broker by itself when you run the command.  However we have had to start the broker ourselves before running the command via 
-
-## The piper file
-
-The piper file at `org/apache/ctakes/timelines/pipeline/Timelines` describes the flow logic of the information extraction, e.g. the annotators involved, the order in which they are run, as well as their configuration parameters.
-
-The contents of the piper file by default are:
 ```
 mybroker/bin/artemis run &
 ```
@@ -88,7 +82,48 @@ And stopping it after the run with:
 ```
 mybroker/bin/artemis stop
 ```
+## The piper file
 
+The piper file at `org/apache/ctakes/timelines/pipeline/Timelines` describes the flow logic of the information extraction, e.g. the annotators involved, the order in which they are run, as well as their configuration parameters.
+
+The contents of the piper file by default are:
+```
+package org.apache.ctakes.timelines
+
+set SetJavaHome=no
+set ForceExit=no
+cli DTRModelPath=d
+cli ModalityModelPath=m
+cli TlinkModelPath=t
+
+load PbjStarter
+
+add PythonRunner Command="-m pip install resources/org/apache/ctakes/timelines/timelines_py" Wait=yes
+
+set TimelinesSecondStep=timelines.timelines_pipeline
+
+add PythonRunner Command="-m $TimelinesSecondStep -rq JavaToPy -o $OutputDirectory"
+
+set minimumSpan=2
+set exclusionTags=“”
+
+// Just the components we need from DefaultFastPipeline
+set WriteBanner=yes
+
+// Load a simple token processing pipeline from another pipeline file
+load DefaultTokenizerPipeline
+
+// Add non-core annotators
+add ContextDependentTokenizerAnnotator
+// Dictionary module requires tokens so needs to be loaded after the tokenization stack
+load DictionarySubPipe
+
+add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
+add DCTAnnotator
+add TimeMentionNormalizer timeout=10
+
+add PbjJmsSender SendQueue=JavaToPy SendStop=yes
+```
 
 ## Questions and Technical Issues
 
