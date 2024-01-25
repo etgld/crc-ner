@@ -74,7 +74,13 @@ The `org.apache.ctakes.core.pipeline.PiperFileRunner` class is the entry point. 
 
 ### (Optional) running the core command outside of the Docker
 
-Add to the core command `-v <path to conda environment>` to run with a specified conda environment.  Ideally, cTAKES should start the ActiveMQ broker by itself when you run the command.  However we have had to start the broker ourselves before running the command via 
+Add to the core command `-v <path to conda environment>** to run with a specified conda environment.  Ideally, cTAKES should start the ActiveMQ broker by itself when you run the command.  However we have had to start the broker ourselves before running the command via 
+
+## The piper file
+
+The piper file at `org/apache/ctakes/timelines/pipeline/Timelines` describes the flow logic of the information extraction, e.g. the annotators involved, the order in which they are run, as well as their configuration parameters.
+
+The contents of the piper file by default are:
 ```
 mybroker/bin/artemis run &
 ```
