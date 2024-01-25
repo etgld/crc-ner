@@ -40,15 +40,49 @@ There are three main separate software packages that this code uses:
 - [Apache cTAKES](https://github.com/apache/ctakes)
 - [CLU Lab Timenorm](https://github.com/clulab/timenorm)
 - [Huggingface Transformers](https://huggingface.co/docs/transformers/index)
+
+
 cTAKES contains several tools for text engineering and information extraction with a focus on clinical text, it is based on [Apache UIMA](https://uima.apache.org).
 Within cTAKES the main module which drives this code is the cTAKES [Python Bridge to Java](https://github.com/apache/ctakes/tree/main/ctakes-pbj).
-While cTAKES is written in Java, the Python Bridge to Java (`ctakes-pbj`) allows for use of python code to process text artifacts the same way one can do 
-with Java within cTAKES.  `ctakes-pbj` accomplishes this by passing text artifacts and their annotated information between the relevant Java and Python processes 
+While cTAKES is written in Java, the Python Bridge to Java (*ctakes-pbj*) allows for use of python code to process text artifacts the same way one can do 
+with Java within cTAKES.  *ctakes-pbj* accomplishes this by passing text artifacts and their annotated information between the relevant Java and Python processes 
 using [DKPro cassis]( https://github.com/dkpro/dkpro-cassis) for serialization, [Apache ActiveMQ]( https://activemq.apache.org) for message brokering, and [stomp.py](https://github.com/jasonrbriggs/stomp.py) for Python-side receipt from and transmission to ActiveMQ.  
 
-Timenorm provides methods for identifying normalizing date and time expressions.
+Timenorm provides methods for identifying normalizing date and time expressions.  We use a customized version (included as a maven module) where we change a heuristic for approximate dates.
 
 We used Huggingface Transformers for training the TLINK model, and use their [Pipelines interface](https://huggingface.co/docs/transformers/main_classes/pipelines) for loading the model for inference.
+
+
+## Architecture
+
+We use two maven modules, one for the Java and Python annotators relevant to processing the clinical notes, and the other which has the customized version of Timenorm.
+
+### Core command
+
+The central command in the Docker (you can also run it outside the Docker with the appropriate dependencies):
+```
+java -cp instance-generator/target/instance-generator-5.0.0-SNAPSHOT-jar-with-dependencies.jar \
+     org.apache.ctakes.core.pipeline.PiperFileRunner \
+     -p org/apache/ctakes/timelines/pipeline/Timelines \
+     -a  mybroker \
+     -i ../input/ \
+     -o ../output \
+     -l org/apache/ctakes/dictionary/lookup/fast/bsv/Unified_Gold_Dev.xml \
+     --pipPbj yes \
+```
+The `org.apache.ctakes.core.pipeline.PiperFileRunner` class is the entry point. `-a mybroker` points to the ActiveMQ broker for the process (you can see how to set one up in the Dockerfile). 
+
+### (Optional) running the core command outside of the Docker
+
+Add to the core command `-v <path to conda environment>` to run with a specified conda environment.  Ideally, cTAKES should start the ActiveMQ broker by itself when you run the command.  However we have had to start the broker ourselves before running the command via 
+```
+mybroker/bin/artemis run &
+```
+And stopping it after the run with:
+```
+mybroker/bin/artemis stop
+```
+
 
 ## Questions and Technical Issues
 
