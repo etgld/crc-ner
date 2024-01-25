@@ -92,9 +92,6 @@ package org.apache.ctakes.timelines
 
 set SetJavaHome=no
 set ForceExit=no
-cli DTRModelPath=d
-cli ModalityModelPath=m
-cli TlinkModelPath=t
 
 load PbjStarter
 
@@ -115,7 +112,6 @@ load DefaultTokenizerPipeline
 
 // Add non-core annotators
 add ContextDependentTokenizerAnnotator
-// Dictionary module requires tokens so needs to be loaded after the tokenization stack
 load DictionarySubPipe
 
 add BackwardsTimeAnnotator classifierJarPath=/org/apache/ctakes/temporal/models/timeannotator/model.jar
@@ -125,6 +121,39 @@ add TimeMentionNormalizer timeout=10
 add PbjJmsSender SendQueue=JavaToPy SendStop=yes
 ```
 
+To break down what's happening here in broad strokes:
+```
+package org.apache.ctakes.timelines
+
+set SetJavaHome=no
+set ForceExit=no
+
+load PbjStarter
+
+add PythonRunner Command="-m pip install resources/org/apache/ctakes/timelines/timelines_py" Wait=yes
+```
+This sets up the necessary environment variables and installs the relevant Python code as well as its dependencies to the Python environment.
+```
+set TimelinesSecondStep=timelines.timelines_pipeline
+
+add PythonRunner Command="-m $TimelinesSecondStep -rq JavaToPy -o $OutputDirectory"
+```
+This starts the Python annotator and has it wait on the ArtemisMQ receive queue for incoming CASes.    
+```
+set minimumSpan=2
+set exclusionTags=“”
+
+// Just the components we need from DefaultFastPipeline
+set WriteBanner=yes
+
+// Load a simple token processing pipeline from another pipeline file
+load DefaultTokenizerPipeline
+
+// Add non-core annotators
+add ContextDependentTokenizerAnnotator
+load DictionarySubPipe
+```
+`minimumSpan` and `exclusionTags` are both configuration parameters for the dictionary lookup module, we don't exclude any parts of speech for lookup and want only to retrieve turns of at least two characters.  The `DefaultTokenizerPipeline` annotates each CAS for paragraphs, sentences, and tokens.  The `ContextDependentTokenizerAnnotator` depends on annotated base tokens and identifies basic numerical expressions for dates and times.  The `DictionarySubPipe` module loads the dictionary configuration XML provided with the `-l` tag in the execution of the main Jar file.          
 ## Questions and Technical Issues
 
 Please contact [Eli Goldner](mailto:eli.goldner@childrens.harvard.edu?subject=Timelines%20Docker%20Issue/Question) for non code-level issues or questions.  For issues in the code please open an issue through the repository page on GitHub.
