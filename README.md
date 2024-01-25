@@ -34,6 +34,20 @@ You may need `sudo` here as well:
 ```
 docker compose up
 ```
+## Core Dependencies
+
+There are two main separate software packages that this code uses:
+- [Apache cTAKES](https://github.com/apache/ctakes)
+- [CLU Lab Timenorm](https://github.com/clulab/timenorm)
+
+cTAKES contains several tools for text engineering and information extraction with a focus on clinical text, it is based on [Apache UIMA](https://uima.apache.org).
+Timenorm provides methods for identifying normalizing date and time expressions.
+Within cTAKES the main module which drives this code is the cTAKES [Python Bridge to Java](https://github.com/apache/ctakes/tree/main/ctakes-pbj).
+While cTAKES is written in Java, the Python Bridge to Java (`ctakes-pbj`) allows for use of python code to process text artifacts the same way one can do 
+with Java within cTAKES.  `ctakes-pbj` accomplishes this by passing text artifacts and their annotated information between the relevant Java and Python processes 
+using [DKPro cassis]( https://github.com/dkpro/dkpro-cassis) for serialization, [Apache ActiveMQ]( https://activemq.apache.org) for message brokering, and [stomp.py](https://github.com/jasonrbriggs/stomp.py) for Python-side receipt from and transmission to ActiveMQ.  
+
+
 ## Questions and Technical Issues
 
 Please contact [Eli Goldner](mailto:eli.goldner@childrens.harvard.edu?subject=Timelines%20Docker%20Issue/Question) for non code-level issues or questions.  For issues in the code please open an issue through the repository page on GitHub.
