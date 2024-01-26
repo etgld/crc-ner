@@ -58,7 +58,7 @@ WORKDIR /usr/src/app/timelines
 RUN pip install stomp.py dkpro-cassis transformers[torch] pandas tomli setuptools
 RUN python -m pip install tomli setuptools
 
-RUN mvn clean package
+RUN mvn -U clean package
 
 
 # Execute the parser jar
