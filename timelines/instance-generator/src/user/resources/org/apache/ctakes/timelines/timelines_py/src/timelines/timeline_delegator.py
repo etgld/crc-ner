@@ -321,14 +321,16 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
     def __init__(self):
         self.use_dtr = False
         self.use_conmod = False
+        self.output_dir = "."
         self.dtr_classifier = lambda _: []
         self.tlink_classifier = lambda _: []
         self.conmod_classifier = lambda _: []
-        self.raw_events = defaultdict(list)
+        self.raw_events = []
 
     def init_params(self, arg_parser):
         self.use_dtr = arg_parser.use_dtr
         self.use_conmod = arg_parser.use_conmod
+        self.output_dir = arg_parser.output_dir
 
     def initialize(self):
         if torch.cuda.is_available():
@@ -379,21 +381,20 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             print(
                 f"No chemotherapy mentions ( using TUI: {CHEMO_TUI} ) found in patient {patient_id} note {note_name}  - skipping"
             )
-            # mostly just to create the key in the dictionary
-            self.raw_events[patient_id].append([])
 
     def collection_process_complete(self):
         output_columns = DTR_OUTPUT_COLUMNS if self.use_dtr else NO_DTR_OUTPUT_COLUMNS
         # don't write empty instances that were used to populate the dictionary
         # in case no concrete chemo mentions were found
-        valid_records = filter(len, chain.from_iterable(self.raw_events.values()))
+        output_tsv_name = "unsummarized_output.tsv"
+        output_path = "".join([self.output_dir, "/", output_tsv_name])
         print("Finished processing notes")
-        print(f"Writing results for all input in {os.getcwd()}")
+        print(f"Writing results for all input in {output_path}")
         pt_df = pd.DataFrame.from_records(
-            valid_records,
+            self.raw_events,
             columns=output_columns,
         )
-        pt_df.to_csv("unsummarized_output.tsv", index=False, sep="\t")
+        pt_df.to_csv(output_path, index=False, sep="\t")
         print("Finished writing")
         sys.exit()
 
@@ -426,7 +427,6 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             print(
                 f"No concrete chemotherapy mentions found in patient {patient_id} note {note_name} - skipping"
             )
-            self.raw_events[patient_id].append([])
 
     def _write_actual_proc_mentions(
         self, cas: Cas, positive_chemo_mentions: List[FeatureStructure]
@@ -513,4 +513,4 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                         note_name,
                         tlink_inst,
                     ]
-                self.raw_events[patient_id].append(instance)
+                self.raw_events.append(instance)
