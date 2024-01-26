@@ -25,7 +25,7 @@ MAX_TLINK_DISTANCE = 60
 TLINK_PAD_LENGTH = 2
 MODEL_MAX_LEN = 512
 CHEMO_TUI = "T061"
-OUTPUT_COLUMNS = [
+DTR_OUTPUT_COLUMNS = [
     "DCT",
     "patient_id",
     "chemo_text",
@@ -39,6 +39,17 @@ OUTPUT_COLUMNS = [
     "tlink_inst",
 ]
 
+NO_DTR_OUTPUT_COLUMNS = [
+    "DCT",
+    "patient_id",
+    "chemo_text",
+    "chemo_annotation_id",
+    "normed_timex",
+    "timex_annotation_id",
+    "tlink",
+    "note_name",
+    "tlink_inst",
+]
 LABEL_TO_INVERTED_LABEL = {
     "before": "after",
     "after": "before",
@@ -53,6 +64,12 @@ LABEL_TO_INVERTED_LABEL = {
     "contains-subevent-1": "contains-subevent",
     "none": "none",
 }
+
+TLINK_HF_HUB = "HealthNLP/pubmedbert_tlink"
+
+DTR_HF_HUB = "HealthNLP/pubmedbert_dtr"
+
+CONMOD_HF_HUB = "HealthNLP/pubmedbert_conmod"
 
 
 def normalize_mention(mention: Union[FeatureStructure, None]) -> str:
@@ -132,6 +149,8 @@ def invert_map(
     return begin_map, end_map
 
 
+# previous conmod model used Pitt sentencing and tokenization
+# for the next conmod model it should use DTR instances
 def get_conmod_instance(event: FeatureStructure, cas: Cas) -> str:
     raw_sentence = list(cas.select_covering(ctakes_types.Sentence, event))[0]
     tokens, token_map = tokens_and_map(cas, raw_sentence, mode="conmod")
@@ -161,7 +180,6 @@ def timexes_with_normalization(
 def get_tlink_instance(
     event: FeatureStructure,
     timex: FeatureStructure,
-    # is_timex: bool,
     tokens: List[str],
     begin2token: Dict[int, int],
     end2token: Dict[int, int],
@@ -273,7 +291,6 @@ def deleted_neighborhood(
 def pt_and_note(cas: Cas):
     document_path_collection = cas.select(ctakes_types.DocumentPath)
     document_path = list(document_path_collection)[0].documentPath
-    # patient_id = os.path.basename(os.path.dirname(document_path))
     note_name = os.path.basename(document_path).split(".")[0]
     patient_id = note_name.split("_")[0]
     return patient_id, note_name
@@ -292,9 +309,7 @@ def get_tuis(event: FeatureStructure) -> Set[str]:
 
 def get_pipeline(path, device):
     return pipeline(
-        "text-classification",
         model=path,
-        tokenizer=path,
         device=device,
         padding=True,
         truncation=True,
@@ -304,18 +319,16 @@ def get_pipeline(path, device):
 
 class TimelineDelegator(cas_annotator.CasAnnotator):
     def __init__(self):
-        self._dtr_path = None
-        self._tlink_path = None
-        self._conmod_path = None
+        self.use_dtr = False
+        self.use_conmod = False
         self.dtr_classifier = lambda _: []
         self.tlink_classifier = lambda _: []
         self.conmod_classifier = lambda _: []
         self.raw_events = defaultdict(list)
 
     def init_params(self, arg_parser):
-        self._dtr_path = arg_parser.dtr_path
-        self._tlink_path = arg_parser.tlink_path
-        self._conmod_path = arg_parser.conmod_path
+        self.use_dtr = arg_parser.use_dtr
+        self.use_conmod = arg_parser.use_conmod
 
     def initialize(self):
         if torch.cuda.is_available():
@@ -324,32 +337,32 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
         else:
             main_device = -1
             print("GPU with CUDA is not available, defaulting to CPU")
-        self.dtr_classifier = get_pipeline(
-            self._dtr_path,
-            main_device,
-        )
-
-        print("DTR classifier loaded")
 
         self.tlink_classifier = get_pipeline(
-            self._tlink_path,
+            TLINK_HF_HUB,
             main_device,
         )
 
         print("TLINK classifier loaded")
+        if self.use_dtr:
+            self.dtr_classifier = get_pipeline(
+                DTR_HF_HUB,
+                main_device,
+            )
 
-        if self._conmod_path is not None:
+            print("DTR classifier loaded")
+
+        if self.use_conmod:
             self.conmod_classifier = get_pipeline(
-                self._conmod_path,
+                CONMOD_HF_HUB,
                 main_device,
             )
 
             print("Conmod classifier loaded")
 
     def declare_params(self, arg_parser):
-        arg_parser.add_arg("--dtr_path")
-        arg_parser.add_arg("--tlink_path")
-        arg_parser.add_arg("--conmod_path")
+        arg_parser.add_arg("--use_dtr", action="store_true")
+        arg_parser.add_arg("--use_conmod", action="store_true")
 
     def process(self, cas: Cas):
         proc_mentions = [
@@ -370,32 +383,23 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
             self.raw_events[patient_id].append([])
 
     def collection_process_complete(self):
+        output_columns = DTR_OUTPUT_COLUMNS if self.use_dtr else NO_DTR_OUTPUT_COLUMNS
+        # don't write empty instances that were used to populate the dictionary
+        # in case no concrete chemo mentions were found
+        valid_records = filter(len, chain.from_iterable(self.raw_events.values()))
         print("Finished processing notes")
-        # for pt_id, records in self.raw_events.items():
-        #     print(f"Writing results for {pt_id} in {os.getcwd()}")
-        #     pt_df = pd.DataFrame.from_records(
-        #         filter(
-        #             len, records
-        #         ),  # don't write empty instances that were used to populate the dictionary in case no concrete chemo mentions were found
-        #         columns=OUTPUT_COLUMNS,
-        #     )
-        #     # pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
-        #     pt_df.to_csv("output_raw.tsv", index=False, sep="\t")
         print(f"Writing results for all input in {os.getcwd()}")
         pt_df = pd.DataFrame.from_records(
-            filter(
-                len, chain.from_iterable(self.raw_events.values())
-            ),  # don't write empty instances that were used to populate the dictionary in case no concrete chemo mentions were found
-            columns=OUTPUT_COLUMNS,
+            valid_records,
+            columns=output_columns,
         )
-        # pt_df.to_csv(f"{pt_id}_raw.tsv", index=False, sep="\t")
-        pt_df.to_csv("output_raw.tsv", index=False, sep="\t")
+        pt_df.to_csv("unsummarized_output.tsv", index=False, sep="\t")
         print("Finished writing")
         sys.exit()
 
     def _write_raw_timelines(self, cas: Cas, proc_mentions: List[FeatureStructure]):
         patient_id, note_name = pt_and_note(cas)
-        if self._conmod_path is None:
+        if not self.use_conmod:
             print(
                 f"Modality filtering turned off, proceeding for patient {patient_id} note {note_name}"
             )
@@ -476,23 +480,37 @@ class TimelineDelegator(cas_annotator.CasAnnotator):
                 f"WARNING: No normalized timexes discovered in {patient_id} file {note_name}"
             )
         for chemo in positive_chemo_mentions:
-            chemo_dtr, dtr_inst = dtr_result(chemo)
+            if self.use_dtr:
+                chemo_dtr, dtr_inst = dtr_result(chemo)
             tlink_dict = tlink_result_dict(chemo)
             for timex, tlink_inst_pair in tlink_dict.items():
                 tlink, tlink_inst = tlink_inst_pair
                 chemo_text = normalize_mention(chemo)
                 timex_text = timex.time.normalizedForm
-                instance = [
-                    document_creation_time,
-                    patient_id,
-                    chemo_text,
-                    annotation_ids[chemo],
-                    chemo_dtr,
-                    timex_text,
-                    annotation_ids[timex],
-                    tlink,
-                    note_name,
-                    dtr_inst,
-                    tlink_inst,
-                ]
+                if self.use_dtr:
+                    instance = [
+                        document_creation_time,
+                        patient_id,
+                        chemo_text,
+                        annotation_ids[chemo],
+                        chemo_dtr,
+                        timex_text,
+                        annotation_ids[timex],
+                        tlink,
+                        note_name,
+                        dtr_inst,
+                        tlink_inst,
+                    ]
+                else:
+                    instance = [
+                        document_creation_time,
+                        patient_id,
+                        chemo_text,
+                        annotation_ids[chemo],
+                        timex_text,
+                        annotation_ids[timex],
+                        tlink,
+                        note_name,
+                        tlink_inst,
+                    ]
                 self.raw_events[patient_id].append(instance)
