@@ -34,7 +34,33 @@ You may need `sudo` here as well:
 ```
 docker compose up
 ```
-## Core Dependencies
+
+## Input and output structure
+
+Given the structure of the summarized gold timelines and the shared task data, the Docker assumes that the input in the `input`
+folder will take the form of a collection of notes comprising all the patients of a given cancer type cohort (for the shared task one of melanoma or ovarian or breast cancers), the base filenames of which will correspond to the scheme:
+```
+<patient identifier>_<four digit year>_<two digit month>_<two digit date>
+```
+Where the year month and date correspond to the creation time of the file.  
+All the files in the shared task dataset follow this schema so for our data there is nothing you need to do. 
+
+Assuming successful processing, the output file will be a tab separated value (`tsv`) file in the `output` folder.
+The file will have the columns:
+```
+DCT	patient_id	chemo_text	chemo_annotation_id	normed_timex	timex_annotation_id	tlink	note_name	tlink_inst
+```
+And each row corresponds to a TLINK classification instance from a given file.  In each row:
+ - The `DCT` cell will hold the document creation time/date of the file which is the source of the instance
+ - The `patient_id` cell will hold the patient identifier of the file which is the source of the instance
+ - `chemo_text` cell will hold the raw text of the chemotherapy mention in the instance as it appears in the note
+ - `chemo_annotation_id` assigns the chemotherapy mention in the previous cell a unique identifier (at the token rather than the type level)
+ - `normed_timex` will hold the normalized version of the time expression in the tlink instance
+ - `timex_annotation_id` assigns the time expression in the previous cell a unique identifier (at the token rather than the type level)
+ - `note_name` holds the name of the corresponding file (technically redundant if your files correspond to specification)
+ - `tlink_inst` holds the full chemotherapy timex pairing instance that was fed to the classifier (mostly for debugging purposes)
+
+## Core dependencies
 
 There are three main separate software packages that this code uses:
 - [Apache cTAKES](https://github.com/apache/ctakes)
@@ -167,6 +193,6 @@ add PbjJmsSender SendQueue=JavaToPy SendStop=yes
 ```
 Sends the CASes which have been processed by the Java annotators to the Python annotator via the ActiveMQ send queue.
 
-## Questions and Technical Issues
+## Questions and technical issues
 
 Please contact [Eli Goldner](mailto:eli.goldner@childrens.harvard.edu?subject=Timelines%20Docker%20Issue/Question) for non code-level issues or questions.  For issues in the code please open an issue through the repository page on GitHub.
